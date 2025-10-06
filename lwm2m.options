@@ -1,0 +1,63 @@
+# Nanopb generation options for lwm2m.proto
+# -----------------------------------------------------------------------------
+# This file constrains bytes/string fields to fixed-size (statically allocated)
+# buffers instead of using pb_callback_t. Adjust the sizes to match your real
+# protocol constraints before regenerating the code.
+# Syntax reference: https://jpa.kapsi.fi/nanopb/docs/reference.html#options
+#   <package>.<Message>.<field> <option>:<value> [<option>:<value> ...]
+# Common options used here:
+#   max_size:N            -> allocate pb_bytes_array_t with capacity N
+#   fixed_length:true     -> use inline fixed length (exactly N) buffer
+#   max_count:N           -> maximum number of repeated elements
+# -----------------------------------------------------------------------------
+# Assumptions (update as needed):
+# - Public keys: 64 bytes (uncompressed X coordinate form) – change to 32 if using Ed25519/X25519 compressed keys
+# - Private keys: 64 bytes (can be 32 if you only store seed)
+# - AES-256 keys: 32 bytes
+# - Signatures: 64 bytes (Ed25519 / ECDSA P-256 r||s)
+# - Nonces: 12 bytes (GCM/ChaCha20-Poly1305) or 24 (legacy XSalsa20) – using 12 here for nounce, 24 for encrypted payload examples
+# - Resource bytes/string payloads capped for embedded constraints
+# -----------------------------------------------------------------------------
+
+# Appearance
+lwm2m.LwM2MAppearance.public_key                max_size:64
+
+# Device & map
+lwm2m.LwM2MDevice.public_key                    max_size:64
+lwm2m.LwM2MDevice.aes_key                       max_size:32 fixed_length:true
+
+# Challenge / Answer
+lwm2m.LwM2MDeviceChallenge.server_public_key    max_size:64
+lwm2m.LwM2MDeviceChallenge.encrypted_nounce     max_size:24
+lwm2m.LwM2MDeviceChallengeAnswer.answer         max_size:128
+
+# Bootstrap response/message
+lwm2m.LwM2MBootstrapResponse.nounce             max_size:12 fixed_length:true
+lwm2m.LwM2MBootstrapResponse.payload            max_size:512
+lwm2m.LwM2MBootstrapMessage.admin_public_key    max_size:64
+lwm2m.LwM2MBootstrapMessage.aes_key             max_size:32 fixed_length:true
+lwm2m.LwM2MBootstrapMessage.resources           max_count:16
+
+# ResourceSet / ResourceGet value variants
+lwm2m.LwM2MResourceSet.bytes_value              max_size:256
+lwm2m.LwM2MResourceSet.string_value             max_size:128
+lwm2m.LwM2MResourceGet.bytes_value              max_size:256
+lwm2m.LwM2MResourceGet.string_value             max_size:128
+
+# Factory partition
+lwm2m.FactoryPartition.public_key               max_size:64
+lwm2m.FactoryPartition.private_key              max_size:64
+lwm2m.FactoryPartition.bootstrap_server         max_size:128
+lwm2m.FactoryPartition.signature                max_size:64 fixed_length:true
+
+# (Optional) Tune map/repeated limits if you later add those fields
+# lwm2m.LwM2MDeviceMap.devices                  max_count:32
+
+# -----------------------------------------------------------------------------
+# Regeneration instructions (example):
+#   protoc --nanopb_out=. --proto_path=. lwm2m.proto
+# or if using generator script:
+#   python build/nanopb-0.4.9.1/generator/nanopb_generator.py -I . lwm2m.proto
+# Make sure your build system depends on both lwm2m.proto and this lwm2m.options
+# so that changes here trigger regeneration.
+# -----------------------------------------------------------------------------

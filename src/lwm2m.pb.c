@@ -27,19 +27,19 @@ PB_BIND(lwm2m_LwM2MDeviceChallenge, lwm2m_LwM2MDeviceChallenge, AUTO)
 PB_BIND(lwm2m_LwM2MDeviceChallengeAnswer, lwm2m_LwM2MDeviceChallengeAnswer, AUTO)
 
 
-PB_BIND(lwm2m_LwM2MBootstrapResponse, lwm2m_LwM2MBootstrapResponse, AUTO)
+PB_BIND(lwm2m_LwM2MBootstrapResponse, lwm2m_LwM2MBootstrapResponse, 2)
 
 
-PB_BIND(lwm2m_LwM2MResourceGet, lwm2m_LwM2MResourceGet, AUTO)
+PB_BIND(lwm2m_LwM2MResourceGet, lwm2m_LwM2MResourceGet, 2)
 
 
-PB_BIND(lwm2m_LwM2MResourceSet, lwm2m_LwM2MResourceSet, AUTO)
+PB_BIND(lwm2m_LwM2MResourceSet, lwm2m_LwM2MResourceSet, 2)
 
 
-PB_BIND(lwm2m_LwM2MBootstrapMessage, lwm2m_LwM2MBootstrapMessage, AUTO)
+PB_BIND(lwm2m_LwM2MBootstrapMessage, lwm2m_LwM2MBootstrapMessage, 4)
 
 
-PB_BIND(lwm2m_FactoryPartition, lwm2m_FactoryPartition, AUTO)
+PB_BIND(lwm2m_FactoryPartition, lwm2m_FactoryPartition, 2)
 
 
 

@@ -1,0 +1,10 @@
+## IDF Component Manager Manifest File
+version: "1.0.0"
+description: LwM2M protobuf library for ESP-IDF
+url: https://github.com/edgez-ai/lwm2m-protobuf
+documentation:
+  url: https://github.com/edgez-ai/lwm2m-protobuf/blob/main/README.md
+
+dependencies:
+  # Add nanopb as a dependency since it's required for protobuf functionality
+  nanopb: "^0.4.9"

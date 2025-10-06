@@ -1,6 +1,7 @@
 # Generated code directory
 generated/
-
+java_out
+python_out
 # Downloaded nanopb sources
 build/
 

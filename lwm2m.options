@@ -45,8 +45,8 @@ lwm2m.LwM2MResourceGet.bytes_value              max_size:256
 lwm2m.LwM2MResourceGet.string_value             max_size:128
 
 # Factory partition
-lwm2m.FactoryPartition.public_key               max_size:64
-lwm2m.FactoryPartition.private_key              max_size:64
+lwm2m.FactoryPartition.public_key               max_size:32 fixed_length:true
+lwm2m.FactoryPartition.private_key              max_size:32 fixed_length:true
 lwm2m.FactoryPartition.bootstrap_server         max_size:128
 lwm2m.FactoryPartition.signature                max_size:64 fixed_length:true
 

@@ -18,8 +18,9 @@ package lwm2m; // Change to your org namespace (e.g., edgez.lwm2m)
 option optimize_for = SPEED;
 // Language-specific (uncomment & adapt)
 // option go_package = "github.com/yourorg/yourrepo/lwm2m/pb;lwm2mpb";
-// option java_multiple_files = true;
-// option java_package = "com.yourorg.lwm2m";
+option java_multiple_files = true;
+option java_package = "com.edgez.lwm2m";
+option java_outer_classname = "LwM2MProto";
 // option csharp_namespace = "YourOrg.LwM2M";
 
 
@@ -120,8 +121,9 @@ message FactoryPartition {
 	sint32 model = 1; // 8 bit model
 	sint32 vendor = 2; // 
 	sint32 serial = 3;
-	bytes public_key = 4; // client public key
-	bytes private_key = 5; // client private key
-	bytes bootstrap_server = 6; // bootstrap server URL
-	bytes signature = 7; // presigned signature using trusted private key
+	sint32 version = 4; // vendor private key version
+	bytes public_key = 5; // client public key
+	bytes private_key = 6; // client private key
+	bytes bootstrap_server = 7; // bootstrap server URL
+	bytes signature = 8; // HMAC-SHA256 signature of model|vendor|serial|version|public_key|private_key|bootstrap_server using factory private key
 }

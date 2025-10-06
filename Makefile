@@ -72,17 +72,21 @@ GEN_ALL := $(GEN_C) $(GEN_H)
 
 all: generate
 
+PY_OUT_DIR ?= python_out
+
 help:
 	@echo "Targets:"; \
-	echo "  generate      - Fetch nanopb (if needed) and generate C code"; \
-	echo "  nanopb        - Fetch/prepare nanopb only"; \
-	echo "  clean         - Remove generated C sources"; \
-	echo "  distclean     - Remove generated sources AND downloaded nanopb"; \
+	echo "  generate           - Fetch nanopb (if needed) and generate C code"; \
+	echo "  generate-python    - Generate Python protobuf module(s) into $(PY_OUT_DIR)"; \
+	echo "  nanopb             - Fetch/prepare nanopb only"; \
+	echo "  clean              - Remove generated C sources"; \
+	echo "  distclean          - Remove generated sources AND downloaded nanopb"; \
 	echo "Variables (override like VAR=value):"; \
-	echo "  NANOPB_VERSION, PROTOC, EXTRA_PROTO_PATHS, OUT_DIR"; \
+	echo "  NANOPB_VERSION, PROTOC, EXTRA_PROTO_PATHS, SRC_DIR, INC_DIR, PY_OUT_DIR"; \
 	echo "  EXTERNAL_NANOPB_PLUGIN (skip cloning nanopb sources)"; \
 	echo "Example:"; \
-	echo "  make generate EXTRA_PROTO_PATHS=/opt/homebrew/Cellar/protobuf/25.1/include";
+	echo "  make generate EXTRA_PROTO_PATHS=/opt/homebrew/Cellar/protobuf/25.1/include"; \
+	echo "  make generate-python PY_OUT_DIR=python_out";
 
 print-vars:
 	@echo "NANOPB_VERSION=$(NANOPB_VERSION)"; \
@@ -92,6 +96,7 @@ print-vars:
 	echo "EXTRA_PROTO_PATHS=$(EXTRA_PROTO_PATHS)"; \
 	echo "SRC_DIR=$(SRC_DIR)"; \
 	echo "INC_DIR=$(INC_DIR)"; \
+	echo "PY_OUT_DIR=$(PY_OUT_DIR)"; \
 	echo "PROTO_FILES=$(PROTO_FILES)";
 
 # ------------------------------------------------------------------------------
@@ -117,6 +122,21 @@ endif
 # ------------------------------------------------------------------------------
 generate: $(GEN_ALL)
 	@echo "Generation complete: $(GEN_ALL)"
+
+# ------------------------------------------------------------------------------
+# Python code generation
+# ------------------------------------------------------------------------------
+.PHONY: generate-python
+generate-python: $(addprefix $(PY_OUT_DIR)/,$(addsuffix _pb2.py,$(PROTO_BASENAMES)))
+	@echo "Python generation complete: $^"
+
+$(PY_OUT_DIR):
+	@mkdir -p $@
+
+$(PY_OUT_DIR)/%_pb2.py: %.proto | $(PY_OUT_DIR)
+	@echo "Generating Python protobuf for $<"
+	@if ! command -v $(PROTOC) >/dev/null 2>&1; then echo "ERROR: protoc not found (set PROTOC=)"; exit 1; fi
+	$(PROTOC) --python_out=$(PY_OUT_DIR) $(INCLUDE_FLAGS) $<
 
 $(SRC_DIR):
 	@mkdir -p $@

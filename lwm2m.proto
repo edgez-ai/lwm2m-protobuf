@@ -19,7 +19,7 @@ option optimize_for = SPEED;
 // Language-specific (uncomment & adapt)
 // option go_package = "github.com/yourorg/yourrepo/lwm2m/pb;lwm2mpb";
 option java_multiple_files = true;
-option java_package = "com.edgez.lwm2m";
+option java_package = "ai.edgez.lwm2m";
 option java_outer_classname = "LwM2MProto";
 // option csharp_namespace = "YourOrg.LwM2M";
 

@@ -26,26 +26,14 @@ int lwm2m_read_factory_partition(const uint8_t *buffer, const size_t buffer_len,
 		return -2; /* decode error */
 	}
 
-	/* Basic semantic / size checks (all BYTES fields have length in .size): */
-	if (partition->public_key.size > sizeof(partition->public_key.bytes) ||
-		partition->private_key.size > sizeof(partition->private_key.bytes) ||
-		partition->bootstrap_server.size > sizeof(partition->bootstrap_server.bytes)) {
-		return -3; /* reported size exceeds compiled buffer */
-	}
+
 
 	/* signature is fixed length (64) per .options: ensure fully populated */
 	if (sizeof(partition->signature) != 64) {
 		return -3; /* compile-time mismatch */
 	}
 
-	/* Additional policy checks (optional, comment out if too strict): */
-	/* Require non-zero lengths for mandatory credentials */
-	if (partition->public_key.size == 0 || partition->private_key.size == 0 || partition->signature[0] == 0) {
-		/* NOTE: signature being all zeros could still pass this simple check; a
-		 * more robust implementation might verify cryptographic structure. */
-		// Not returning error yet; comment/uncomment next line to enforce
-		// return -3;
-	}
+
 
 	return 0; /* success */
 }

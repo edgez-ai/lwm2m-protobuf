@@ -38,7 +38,6 @@ message LwM2MMessage {
 message LwM2MAppearance {
 	sint32 model = 1;
 	uint32 serial = 2;
-	bytes public_key = 3; // client public key
 }
 
 message LwM2MDevice {

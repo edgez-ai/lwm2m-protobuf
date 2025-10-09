@@ -19,9 +19,6 @@
 # - Resource bytes/string payloads capped for embedded constraints
 # -----------------------------------------------------------------------------
 
-# Appearance
-lwm2m.LwM2MAppearance.public_key                max_size:64
-
 # Device & map
 lwm2m.LwM2MDevice.public_key                    max_size:64
 lwm2m.LwM2MDevice.aes_key                       max_size:32 fixed_length:true

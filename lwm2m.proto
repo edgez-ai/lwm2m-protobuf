@@ -129,4 +129,5 @@ message FactoryPartition {
 	bytes private_key = 6; // client private key
 	bytes bootstrap_server = 7; // bootstrap server URL
 	bytes signature = 8; // signature of the above fields using factory private key
+	bytes signature_cert = 9; // certificate of the factory public key
 }

@@ -120,9 +120,8 @@ message FactoryPartition {
 	sint32 model = 1; // 8 bit model
 	sint32 vendor = 2; // 
 	sint32 serial = 3;
-	sint32 version = 4; // vendor private key version
+	sint32 pin = 4; // vendor private key version
 	bytes public_key = 5; // client public key
 	bytes private_key = 6; // client private key
 	bytes bootstrap_server = 7; // bootstrap server URL
-	bytes signature = 8; // HMAC-SHA256 signature of model|vendor|serial|version|public_key|private_key|bootstrap_server using factory private key
 }

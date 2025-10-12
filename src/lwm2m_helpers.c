@@ -26,15 +26,6 @@ int lwm2m_read_factory_partition(const uint8_t *buffer, const size_t buffer_len,
 		return -2; /* decode error */
 	}
 
-
-
-	/* signature is fixed length (64) per .options: ensure fully populated */
-	if (sizeof(partition->signature) != 64) {
-		return -3; /* compile-time mismatch */
-	}
-
-
-
 	return 0; /* success */
 }
 

@@ -39,7 +39,7 @@ PB_BIND(lwm2m_LwM2MResourceSet, lwm2m_LwM2MResourceSet, 2)
 PB_BIND(lwm2m_LwM2MBootstrapMessage, lwm2m_LwM2MBootstrapMessage, 4)
 
 
-PB_BIND(lwm2m_FactoryPartition, lwm2m_FactoryPartition, 2)
+PB_BIND(lwm2m_FactoryPartition, lwm2m_FactoryPartition, AUTO)
 
 
 

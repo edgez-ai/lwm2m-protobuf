@@ -27,18 +27,11 @@ option java_outer_classname = "LwM2MProto";
 // (device)appearance broadcasting => (gateway)device discovery => (device) challenge => (device) challenge answer => (server) bootstrap => (device) bootstrap
 
 message LwM2MMessage {
-	uint64 timestamp = 1; // Server receive or client sample time
+	string serial = 1;
     oneof body {
-		LwM2MAppearance appearance = 100;
 		// Future message types here
-		bytes encrypted_data = 101;  // inside is encrypted protobuf message
+		bytes encrypted_data = 100;  // inside is encrypted protobuf message
     }
-}
-
-// around 40 bytes when serialized
-message LwM2MAppearance {
-	sint32 model = 1;
-	uint32 serial = 2;
 }
 
 message LwM2MDevice {

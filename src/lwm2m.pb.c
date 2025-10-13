@@ -9,9 +9,6 @@
 PB_BIND(lwm2m_LwM2MMessage, lwm2m_LwM2MMessage, 2)
 
 
-PB_BIND(lwm2m_LwM2MAppearance, lwm2m_LwM2MAppearance, AUTO)
-
-
 PB_BIND(lwm2m_LwM2MDevice, lwm2m_LwM2MDevice, AUTO)
 
 

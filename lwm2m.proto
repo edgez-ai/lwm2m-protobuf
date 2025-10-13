@@ -121,13 +121,11 @@ message LwM2MResourceSet {
 }
 
 message FactoryPartition {
-	sint32 model = 1; // 8 bit model
-	sint32 vendor = 2; // 
-	sint32 serial = 3;
-	sint32 pin = 4; // pin code for provisioning
-	bytes public_key = 5; // client public key
-	bytes private_key = 6; // client private key
-	bytes bootstrap_server = 7; // bootstrap server URL
-	bytes signature = 8; // signature of the above fields using factory private key
-	bytes signature_cert = 9; // certificate of the factory public key
+	string serial = 1;
+	sint32 pin = 2; // pin code for provisioning
+	bytes public_key = 3; // client public key
+	bytes private_key = 4; // client private key
+	bytes bootstrap_server = 5; // bootstrap server URL
+	bytes signature = 6; // signature of the above fields using factory private key
+	bytes signature_cert = 7; // certificate of the factory public key
 }

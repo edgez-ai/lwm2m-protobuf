@@ -22,17 +22,10 @@ typedef enum _lwm2m_LwM2MBootstrapResultCode {
 } lwm2m_LwM2MBootstrapResultCode;
 
 /* Struct definitions */
-/* around 40 bytes when serialized */
-typedef struct _lwm2m_LwM2MAppearance {
-    int32_t model;
-    uint32_t serial;
-} lwm2m_LwM2MAppearance;
-
 typedef struct _lwm2m_LwM2MMessage {
-    uint64_t timestamp; /* Server receive or client sample time */
+    pb_callback_t serial;
     pb_size_t which_body;
     union {
-        lwm2m_LwM2MAppearance appearance;
         /* Future message types here */
         pb_callback_t encrypted_data; /* inside is encrypted protobuf message */
     } body;
@@ -147,7 +140,6 @@ extern "C" {
 
 
 
-
 #define lwm2m_LwM2MBootstrapResponse_code_ENUMTYPE lwm2m_LwM2MBootstrapResultCode
 
 
@@ -156,8 +148,7 @@ extern "C" {
 
 
 /* Initializer values for message structs */
-#define lwm2m_LwM2MMessage_init_default          {0, 0, {lwm2m_LwM2MAppearance_init_default}}
-#define lwm2m_LwM2MAppearance_init_default       {0, 0}
+#define lwm2m_LwM2MMessage_init_default          {{{NULL}, NULL}, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}}
 #define lwm2m_LwM2MDeviceMap_init_default        {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_default {0, false, lwm2m_LwM2MDevice_init_default}
@@ -168,8 +159,7 @@ extern "C" {
 #define lwm2m_LwM2MResourceGet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_LwM2MResourceSet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}}
-#define lwm2m_LwM2MMessage_init_zero             {0, 0, {lwm2m_LwM2MAppearance_init_zero}}
-#define lwm2m_LwM2MAppearance_init_zero          {0, 0}
+#define lwm2m_LwM2MMessage_init_zero             {{{NULL}, NULL}, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}}
 #define lwm2m_LwM2MDeviceMap_init_zero           {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_zero {0, false, lwm2m_LwM2MDevice_init_zero}
@@ -182,11 +172,8 @@ extern "C" {
 #define lwm2m_FactoryPartition_init_zero         {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define lwm2m_LwM2MAppearance_model_tag          1
-#define lwm2m_LwM2MAppearance_serial_tag         2
-#define lwm2m_LwM2MMessage_timestamp_tag         1
-#define lwm2m_LwM2MMessage_appearance_tag        100
-#define lwm2m_LwM2MMessage_encrypted_data_tag    101
+#define lwm2m_LwM2MMessage_serial_tag            1
+#define lwm2m_LwM2MMessage_encrypted_data_tag    100
 #define lwm2m_LwM2MDevice_model_tag              1
 #define lwm2m_LwM2MDevice_serial_tag             2
 #define lwm2m_LwM2MDevice_public_key_tag         3
@@ -235,18 +222,10 @@ extern "C" {
 
 /* Struct field encoding specification for nanopb */
 #define lwm2m_LwM2MMessage_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   timestamp,         1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (body,appearance,body.appearance), 100) \
-X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 101)
+X(a, CALLBACK, SINGULAR, STRING,   serial,            1) \
+X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 100)
 #define lwm2m_LwM2MMessage_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MMessage_DEFAULT NULL
-#define lwm2m_LwM2MMessage_body_appearance_MSGTYPE lwm2m_LwM2MAppearance
-
-#define lwm2m_LwM2MAppearance_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
-X(a, STATIC,   SINGULAR, UINT32,   serial,            2)
-#define lwm2m_LwM2MAppearance_CALLBACK NULL
-#define lwm2m_LwM2MAppearance_DEFAULT NULL
 
 #define lwm2m_LwM2MDevice_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
@@ -336,7 +315,6 @@ X(a, CALLBACK, SINGULAR, BYTES,    signature_cert,    7)
 #define lwm2m_FactoryPartition_DEFAULT NULL
 
 extern const pb_msgdesc_t lwm2m_LwM2MMessage_msg;
-extern const pb_msgdesc_t lwm2m_LwM2MAppearance_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDevice_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDeviceMap_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDeviceMap_DevicesEntry_msg;
@@ -350,7 +328,6 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define lwm2m_LwM2MMessage_fields &lwm2m_LwM2MMessage_msg
-#define lwm2m_LwM2MAppearance_fields &lwm2m_LwM2MAppearance_msg
 #define lwm2m_LwM2MDevice_fields &lwm2m_LwM2MDevice_msg
 #define lwm2m_LwM2MDeviceMap_fields &lwm2m_LwM2MDeviceMap_msg
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_fields &lwm2m_LwM2MDeviceMap_DevicesEntry_msg
@@ -369,7 +346,6 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 /* lwm2m_LwM2MDeviceBootstrap_size depends on runtime parameters */
 /* lwm2m_FactoryPartition_size depends on runtime parameters */
 #define LWM2M_LWM2M_PB_H_MAX_SIZE                lwm2m_LwM2MBootstrapResponse_size
-#define lwm2m_LwM2MAppearance_size               12
 #define lwm2m_LwM2MBootstrapResponse_size        523
 #define lwm2m_LwM2MDeviceChallenge_size          72
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_size   120

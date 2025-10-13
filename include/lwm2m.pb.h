@@ -23,7 +23,7 @@ typedef enum _lwm2m_LwM2MBootstrapResultCode {
 
 /* Struct definitions */
 typedef struct _lwm2m_LwM2MMessage {
-    pb_callback_t serial;
+    char serial[16];
     pb_size_t which_body;
     union {
         /* Future message types here */
@@ -148,7 +148,7 @@ extern "C" {
 
 
 /* Initializer values for message structs */
-#define lwm2m_LwM2MMessage_init_default          {{{NULL}, NULL}, 0, {{{NULL}, NULL}}}
+#define lwm2m_LwM2MMessage_init_default          {"", 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}}
 #define lwm2m_LwM2MDeviceMap_init_default        {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_default {0, false, lwm2m_LwM2MDevice_init_default}
@@ -159,7 +159,7 @@ extern "C" {
 #define lwm2m_LwM2MResourceGet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_LwM2MResourceSet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}}
-#define lwm2m_LwM2MMessage_init_zero             {{{NULL}, NULL}, 0, {{{NULL}, NULL}}}
+#define lwm2m_LwM2MMessage_init_zero             {"", 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}}
 #define lwm2m_LwM2MDeviceMap_init_zero           {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_zero {0, false, lwm2m_LwM2MDevice_init_zero}
@@ -222,7 +222,7 @@ extern "C" {
 
 /* Struct field encoding specification for nanopb */
 #define lwm2m_LwM2MMessage_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   serial,            1) \
+X(a, STATIC,   SINGULAR, STRING,   serial,            1) \
 X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 100)
 #define lwm2m_LwM2MMessage_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MMessage_DEFAULT NULL

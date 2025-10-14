@@ -27,7 +27,8 @@ option java_outer_classname = "LwM2MProto";
 // (device)appearance broadcasting => (gateway)device discovery => (device) challenge => (device) challenge answer => (server) bootstrap => (device) bootstrap
 
 message LwM2MMessage {
-	string serial = 1;
+	sint32 model = 1;
+	uint32 serial = 2; // also same meaning for node_id in mesh network
     oneof body {
 		// Future message types here
 		bytes encrypted_data = 100;  // inside is encrypted protobuf message
@@ -126,4 +127,6 @@ message FactoryPartition {
 	bytes bootstrap_server = 5; // bootstrap server URL
 	bytes signature = 6; // signature of the above fields using factory private key
 	bytes signature_cert = 7; // certificate of the factory public key
+	sint32 model = 8; // device model
+	uint32 serial_number = 9; // device serial number
 }

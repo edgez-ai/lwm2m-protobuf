@@ -23,7 +23,8 @@ typedef enum _lwm2m_LwM2MBootstrapResultCode {
 
 /* Struct definitions */
 typedef struct _lwm2m_LwM2MMessage {
-    char serial[16];
+    int32_t model;
+    uint32_t serial; /* also same meaning for node_id in mesh network */
     pb_size_t which_body;
     union {
         /* Future message types here */
@@ -129,6 +130,8 @@ typedef struct _lwm2m_FactoryPartition {
     lwm2m_FactoryPartition_bootstrap_server_t bootstrap_server; /* bootstrap server URL */
     lwm2m_FactoryPartition_signature_t signature; /* signature of the above fields using factory private key */
     pb_callback_t signature_cert; /* certificate of the factory public key */
+    int32_t model; /* device model */
+    uint32_t serial_number; /* device serial number */
 } lwm2m_FactoryPartition;
 
 
@@ -156,7 +159,7 @@ extern "C" {
 
 
 /* Initializer values for message structs */
-#define lwm2m_LwM2MMessage_init_default          {"", 0, {{{NULL}, NULL}}}
+#define lwm2m_LwM2MMessage_init_default          {0, 0, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}}
 #define lwm2m_LwM2MDeviceMap_init_default        {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_default {0, false, lwm2m_LwM2MDevice_init_default}
@@ -167,8 +170,8 @@ extern "C" {
 #define lwm2m_LwM2MDeviceBootstrap_init_default  {0, 0, {{NULL}, NULL}, {{NULL}, NULL}}
 #define lwm2m_LwM2MResourceGet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_LwM2MResourceSet_init_default      {0, 0, 0, 0, {{0, {0}}}}
-#define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}}
-#define lwm2m_LwM2MMessage_init_zero             {"", 0, {{{NULL}, NULL}}}
+#define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}, 0, 0}
+#define lwm2m_LwM2MMessage_init_zero             {0, 0, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}}
 #define lwm2m_LwM2MDeviceMap_init_zero           {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_zero {0, false, lwm2m_LwM2MDevice_init_zero}
@@ -179,10 +182,11 @@ extern "C" {
 #define lwm2m_LwM2MDeviceBootstrap_init_zero     {0, 0, {{NULL}, NULL}, {{NULL}, NULL}}
 #define lwm2m_LwM2MResourceGet_init_zero         {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_LwM2MResourceSet_init_zero         {0, 0, 0, 0, {{0, {0}}}}
-#define lwm2m_FactoryPartition_init_zero         {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}}
+#define lwm2m_FactoryPartition_init_zero         {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define lwm2m_LwM2MMessage_serial_tag            1
+#define lwm2m_LwM2MMessage_model_tag             1
+#define lwm2m_LwM2MMessage_serial_tag            2
 #define lwm2m_LwM2MMessage_encrypted_data_tag    100
 #define lwm2m_LwM2MDevice_model_tag              1
 #define lwm2m_LwM2MDevice_serial_tag             2
@@ -231,10 +235,13 @@ extern "C" {
 #define lwm2m_FactoryPartition_bootstrap_server_tag 5
 #define lwm2m_FactoryPartition_signature_tag     6
 #define lwm2m_FactoryPartition_signature_cert_tag 7
+#define lwm2m_FactoryPartition_model_tag         8
+#define lwm2m_FactoryPartition_serial_number_tag 9
 
 /* Struct field encoding specification for nanopb */
 #define lwm2m_LwM2MMessage_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   serial,            1) \
+X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
+X(a, STATIC,   SINGULAR, UINT32,   serial,            2) \
 X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 100)
 #define lwm2m_LwM2MMessage_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MMessage_DEFAULT NULL
@@ -328,7 +335,9 @@ X(a, STATIC,   SINGULAR, BYTES,    public_key,        3) \
 X(a, STATIC,   SINGULAR, BYTES,    private_key,       4) \
 X(a, STATIC,   SINGULAR, BYTES,    bootstrap_server,   5) \
 X(a, STATIC,   SINGULAR, BYTES,    signature,         6) \
-X(a, CALLBACK, SINGULAR, BYTES,    signature_cert,    7)
+X(a, CALLBACK, SINGULAR, BYTES,    signature_cert,    7) \
+X(a, STATIC,   SINGULAR, SINT32,   model,             8) \
+X(a, STATIC,   SINGULAR, UINT32,   serial_number,     9)
 #define lwm2m_FactoryPartition_CALLBACK pb_default_field_callback
 #define lwm2m_FactoryPartition_DEFAULT NULL
 

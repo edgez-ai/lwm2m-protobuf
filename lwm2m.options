@@ -24,9 +24,11 @@ lwm2m.LwM2MDevice.public_key                    max_size:64
 lwm2m.LwM2MDevice.aes_key                       max_size:32 fixed_length:true
 
 # Challenge / Answer
-lwm2m.LwM2MDeviceChallenge.server_public_key    max_size:64
-lwm2m.LwM2MDeviceChallenge.encrypted_nounce     max_size:24
-lwm2m.LwM2MDeviceChallengeAnswer.answer         max_size:128
+lwm2m.LwM2MDeviceChallenge.public_key    max_size:32
+lwm2m.LwM2MDeviceChallenge.nounce     max_size:16
+
+lwm2m.LwM2MDeviceChallengeAnswer.public_key    max_size:32
+lwm2m.LwM2MDeviceChallengeAnswer.signature         max_size:128
 
 # Bootstrap response/message
 lwm2m.LwM2MBootstrapResponse.nounce             max_size:12 fixed_length:true

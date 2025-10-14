@@ -21,6 +21,9 @@ PB_BIND(lwm2m_LwM2MDeviceMap_DevicesEntry, lwm2m_LwM2MDeviceMap_DevicesEntry, AU
 PB_BIND(lwm2m_LwM2MDeviceChallenge, lwm2m_LwM2MDeviceChallenge, AUTO)
 
 
+PB_BIND(lwm2m_LwM2MDeviceChallengeAnswer, lwm2m_LwM2MDeviceChallengeAnswer, AUTO)
+
+
 PB_BIND(lwm2m_LwM2MDeviceBootstrapRequest, lwm2m_LwM2MDeviceBootstrapRequest, AUTO)
 
 

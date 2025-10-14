@@ -43,8 +43,6 @@ lwm2m.LwM2MResourceSet.string_value             max_size:128
 lwm2m.LwM2MResourceGet.bytes_value              max_size:256
 lwm2m.LwM2MResourceGet.string_value             max_size:128
 
-lwm2m.LwM2MMessage.serial                       max_size:16
-
 # Factory partition
 lwm2m.FactoryPartition.serial                   max_size:16
 lwm2m.FactoryPartition.public_key               max_size:32

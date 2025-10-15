@@ -40,6 +40,9 @@ message LwM2MDevice {
 	uint32 serial = 2; // also same meaning for node_id in mesh network
 	bytes public_key = 3; // client public key
 	bytes aes_key = 4; // symmetric key for AES-256-GCM
+	bytes mac_address = 5;
+	sint32 instance_id = 6; // unique per cluster
+	bool banned = 7; // if true, device is banned and cannot connect
 }
 
 message LwM2MDeviceMap {

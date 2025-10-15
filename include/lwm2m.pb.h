@@ -38,6 +38,9 @@ typedef struct _lwm2m_LwM2MDevice {
     uint32_t serial; /* also same meaning for node_id in mesh network */
     lwm2m_LwM2MDevice_public_key_t public_key; /* client public key */
     pb_byte_t aes_key[32]; /* symmetric key for AES-256-GCM */
+    pb_callback_t mac_address;
+    int32_t instance_id; /* unique per cluster */
+    bool banned; /* if true, device is banned and cannot connect */
 } lwm2m_LwM2MDevice;
 
 typedef struct _lwm2m_LwM2MDeviceMap {
@@ -160,7 +163,7 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define lwm2m_LwM2MMessage_init_default          {0, 0, 0, {{{NULL}, NULL}}}
-#define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}}
+#define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
 #define lwm2m_LwM2MDeviceMap_init_default        {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_default {0, false, lwm2m_LwM2MDevice_init_default}
 #define lwm2m_LwM2MDeviceChallenge_init_default  {0, {0, {0}}}
@@ -172,7 +175,7 @@ extern "C" {
 #define lwm2m_LwM2MResourceSet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {{NULL}, NULL}, 0, 0}
 #define lwm2m_LwM2MMessage_init_zero             {0, 0, 0, {{{NULL}, NULL}}}
-#define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}}
+#define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
 #define lwm2m_LwM2MDeviceMap_init_zero           {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_zero {0, false, lwm2m_LwM2MDevice_init_zero}
 #define lwm2m_LwM2MDeviceChallenge_init_zero     {0, {0, {0}}}
@@ -192,6 +195,9 @@ extern "C" {
 #define lwm2m_LwM2MDevice_serial_tag             2
 #define lwm2m_LwM2MDevice_public_key_tag         3
 #define lwm2m_LwM2MDevice_aes_key_tag            4
+#define lwm2m_LwM2MDevice_mac_address_tag        5
+#define lwm2m_LwM2MDevice_instance_id_tag        6
+#define lwm2m_LwM2MDevice_banned_tag             7
 #define lwm2m_LwM2MDeviceMap_devices_tag         1
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_key_tag 1
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_value_tag 2
@@ -250,8 +256,11 @@ X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 10
 X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
 X(a, STATIC,   SINGULAR, UINT32,   serial,            2) \
 X(a, STATIC,   SINGULAR, BYTES,    public_key,        3) \
-X(a, STATIC,   SINGULAR, FIXED_LENGTH_BYTES, aes_key,           4)
-#define lwm2m_LwM2MDevice_CALLBACK NULL
+X(a, STATIC,   SINGULAR, FIXED_LENGTH_BYTES, aes_key,           4) \
+X(a, CALLBACK, SINGULAR, BYTES,    mac_address,       5) \
+X(a, STATIC,   SINGULAR, SINT32,   instance_id,       6) \
+X(a, STATIC,   SINGULAR, BOOL,     banned,            7)
+#define lwm2m_LwM2MDevice_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MDevice_DEFAULT NULL
 
 #define lwm2m_LwM2MDeviceMap_FIELDLIST(X, a) \
@@ -370,7 +379,9 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 
 /* Maximum encoded size of messages (where known) */
 /* lwm2m_LwM2MMessage_size depends on runtime parameters */
+/* lwm2m_LwM2MDevice_size depends on runtime parameters */
 /* lwm2m_LwM2MDeviceMap_size depends on runtime parameters */
+/* lwm2m_LwM2MDeviceMap_DevicesEntry_size depends on runtime parameters */
 /* lwm2m_LwM2MDeviceBootstrapRequest_size depends on runtime parameters */
 /* lwm2m_LwM2MDeviceBootstrap_size depends on runtime parameters */
 /* lwm2m_FactoryPartition_size depends on runtime parameters */
@@ -378,8 +389,6 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 #define lwm2m_LwM2MBootstrapResponse_size        523
 #define lwm2m_LwM2MDeviceChallengeAnswer_size    165
 #define lwm2m_LwM2MDeviceChallenge_size          40
-#define lwm2m_LwM2MDeviceMap_DevicesEntry_size   120
-#define lwm2m_LwM2MDevice_size                   112
 #define lwm2m_LwM2MResourceGet_size              277
 #define lwm2m_LwM2MResourceSet_size              277
 

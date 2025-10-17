@@ -20,6 +20,19 @@
 #include "esp_log.h"
 
 static const char *TAG = "LWM2M_CRYPTO";
+
+/* Constant-time memory comparison to prevent timing attacks */
+static int constant_time_memcmp(const void *a, const void *b, size_t len) {
+    const unsigned char *pa = (const unsigned char *)a;
+    const unsigned char *pb = (const unsigned char *)b;
+    unsigned char result = 0;
+    
+    for (size_t i = 0; i < len; i++) {
+        result |= pa[i] ^ pb[i];
+    }
+    
+    return result;
+}
 #else
 /* For non-ESP platforms, you would need to link against mbedTLS or similar */
 #warning "ECDH AES key derivation and ChaCha20-Poly1305 require mbedTLS for non-ESP platforms"
@@ -381,7 +394,7 @@ int lwm2m_chacha20_poly1305_decrypt(const uint8_t *key, const uint8_t *nonce,
     }
 
     /* Constant-time tag comparison */
-    if (mbedtls_platform_memcmp(tag, computed_tag, 16) != 0) {
+    if (constant_time_memcmp(tag, computed_tag, 16) != 0) {
         ESP_LOGE(TAG, "Authentication tag verification failed");
         ret = -3;
         goto cleanup;

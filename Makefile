@@ -80,6 +80,7 @@ help:
 	echo "  generate           - Fetch nanopb (if needed) and generate C code"; \
 	echo "  generate-python    - Generate Python protobuf module(s) into $(PY_OUT_DIR)"; \
 	echo "  generate-java      - Generate Java protobuf classes into $(JAVA_OUT_DIR)"; \
+	echo "  test-chacha20      - Build and demonstrate ChaCha20-Poly1305 functionality"; \
 	echo "  nanopb             - Fetch/prepare nanopb only"; \
 	echo "  clean              - Remove generated C sources"; \
 	echo "  distclean          - Remove generated sources AND downloaded nanopb"; \
@@ -89,7 +90,8 @@ help:
 	echo "Example:"; \
 	echo "  make generate EXTRA_PROTO_PATHS=/opt/homebrew/Cellar/protobuf/25.1/include"; \
 	echo "  make generate-python PY_OUT_DIR=python_out"; \
-	echo "  make generate-java JAVA_OUT_DIR=java_out";
+	echo "  make generate-java JAVA_OUT_DIR=java_out"; \
+	echo "  make test-chacha20  # Note: requires mbedTLS on non-ESP platforms";
 
 print-vars:
 	@echo "NANOPB_VERSION=$(NANOPB_VERSION)"; \
@@ -202,6 +204,26 @@ distclean: clean
 # Simple test-build: ensure generation only (compilation removed per request)
 test-build: generate
 	@echo "Generation successful (no object build)."
+
+# Test ChaCha20-Poly1305 functionality (requires ESP-IDF or mbedTLS)
+test-chacha20: generate
+	@echo "Building ChaCha20-Poly1305 test..."
+	@if command -v gcc >/dev/null 2>&1; then \
+		gcc -Wall -Wextra -std=c99 \
+			-I$(INC_DIR) -I$(NANOPB_DIR) \
+			-DESP_PLATFORM=0 \
+			$(SRC_DIR)/lwm2m.pb.c \
+			$(SRC_DIR)/lwm2m_helpers.c \
+			$(NANOPB_DIR)/pb_common.c \
+			$(NANOPB_DIR)/pb_decode.c \
+			$(NANOPB_DIR)/pb_encode.c \
+			test_chacha20.c \
+			-o test_chacha20 || echo "Note: ChaCha20 test requires mbedTLS on non-ESP platforms"; \
+	else \
+		echo "gcc not found - cannot compile test"; \
+	fi
+
+.PHONY: test-chacha20
 
 ################################################################################
 # End of Makefile

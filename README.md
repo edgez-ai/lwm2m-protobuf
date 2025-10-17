@@ -230,13 +230,105 @@ int result = lwm2m_ecdh_derive_aes_key(peer_public_key, our_private_key, derived
 - Properly clears sensitive data from memory
 - Thread-safe implementation
 
+### ChaCha20-Poly1305 AEAD Encryption
+
+The library now includes ChaCha20-Poly1305 Authenticated Encryption with Associated Data (AEAD) functions for secure message encryption.
+
+#### Basic Usage
+
+```c
+#include "lwm2m_helpers.h"
+
+// Use a derived key from ECDH or your own 32-byte key
+uint8_t key[32];         // 256-bit encryption key
+uint8_t nonce[12];       // 96-bit nonce (must be unique per encryption)
+uint8_t tag[16];         // 128-bit authentication tag
+uint8_t ciphertext[256];
+uint8_t plaintext[256];
+
+const char *message = "Secret message to encrypt";
+const char *aad = "Public authenticated data";
+
+// Generate a secure random nonce
+int result = lwm2m_chacha20_generate_nonce(nonce);
+if (result != 0) {
+    printf("Nonce generation failed: %d\n", result);
+    return -1;
+}
+
+// Encrypt
+result = lwm2m_chacha20_poly1305_encrypt(key, nonce,
+                                        (uint8_t *)message, strlen(message),
+                                        (uint8_t *)aad, strlen(aad),
+                                        ciphertext, tag);
+if (result == 0) {
+    printf("Encryption successful!\n");
+    // Transmit: nonce + ciphertext + tag (aad can be sent separately)
+}
+
+// Decrypt
+result = lwm2m_chacha20_poly1305_decrypt(key, nonce,
+                                        ciphertext, strlen(message),
+                                        (uint8_t *)aad, strlen(aad),
+                                        tag, plaintext);
+if (result == 0) {
+    plaintext[strlen(message)] = '\0';  // null-terminate for string
+    printf("Decrypted: %s\n", (char *)plaintext);
+} else if (result == -3) {
+    printf("Authentication failed - message was tampered with!\n");
+}
+```
+
+#### Testing ChaCha20-Poly1305
+
+A test program is included to demonstrate the functionality:
+
+```bash
+make test-chacha20
+./test_chacha20  # Run the demonstration (ESP-IDF or mbedTLS required)
+```
+
+#### ChaCha20-Poly1305 Error Codes
+
+- `0`: Success
+- `-1`: Invalid arguments (NULL pointers, invalid lengths)
+- `-2`: Encryption/decryption failure  
+- `-3`: Authentication failure (tag verification failed during decryption)
+
+#### ChaCha20-Poly1305 Security Notes
+
+- Uses ChaCha20 stream cipher with Poly1305 authenticator
+- 256-bit keys, 96-bit nonces, 128-bit authentication tags
+- Nonces must be unique for each encryption with the same key
+- Provides both confidentiality and authenticity
+- Constant-time tag verification prevents timing attacks
+- Automatically clears sensitive intermediate values
+
+#### Integration with ECDH
+
+ChaCha20-Poly1305 works perfectly with ECDH-derived keys:
+
+```c
+// First derive a shared key using ECDH
+uint8_t shared_key[32];
+lwm2m_ecdh_derive_aes_key_simple(peer_public_key, our_private_key, shared_key);
+
+// Then use it for ChaCha20-Poly1305 encryption
+uint8_t nonce[12], tag[16], ciphertext[256];
+lwm2m_chacha20_generate_nonce(nonce);
+lwm2m_chacha20_poly1305_encrypt(shared_key, nonce, plaintext, plaintext_len, 
+                                aad, aad_len, ciphertext, tag);
+```
+
 ## Future Enhancements
 
 * Add nanopb options file to fine-tune field allocation / max sizes.
-* ✅ ~~Provide helper encode/decode functions in `lwm2m_helpers.c`.~~ (Added ECDH AES key derivation)
+* ✅ ~~Provide helper encode/decode functions in `lwm2m_helpers.c`.~~ (Added ECDH AES key derivation and ChaCha20-Poly1305)
 * Create a CMakeLists.txt wrapper (if desired by consuming projects).
-* Add more cryptographic functions (ChaCha20-Poly1305, digital signatures)
+* ✅ ~~Add ChaCha20-Poly1305 encryption~~ (Added with nonce generation)
+* Add digital signature functions (ECDSA, EdDSA)
 * Add unit tests for cryptographic functions
+* Add AES-GCM encryption as an alternative to ChaCha20-Poly1305
 
 ---
 MIT or the license you prefer for your schema/code (adjust as necessary).

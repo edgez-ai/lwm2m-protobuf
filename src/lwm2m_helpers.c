@@ -10,6 +10,7 @@
 #ifdef ESP_PLATFORM
 /* ESP-IDF includes for cryptographic functions */
 #include "mbedtls/ecdh.h"
+#include "mbedtls/ecp.h"
 #include "mbedtls/hkdf.h"
 #include "mbedtls/md.h"
 #include "mbedtls/entropy.h"
@@ -35,7 +36,7 @@ static int constant_time_memcmp(const void *a, const void *b, size_t len) {
 }
 #else
 /* For non-ESP platforms, you would need to link against mbedTLS or similar */
-#warning "ECDH AES key derivation and ChaCha20-Poly1305 require mbedTLS for non-ESP platforms"
+#warning "Curve25519 AES key derivation and ChaCha20-Poly1305 require mbedTLS for non-ESP platforms"
 #endif
 
 /* Return codes:
@@ -76,7 +77,7 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
     mbedtls_mpi shared_secret_mpi;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
-    uint8_t shared_secret[32]; /* P-256 shared secret is 32 bytes */
+    uint8_t shared_secret[32]; /* Curve25519 shared secret is 32 bytes */
     
     /* Initialize all contexts and structures */
     mbedtls_ecp_group_init(&grp);
@@ -87,7 +88,7 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
     mbedtls_ctr_drbg_init(&ctr_drbg);
 
     /* Seed the random number generator */
-    const char *pers = "lwm2m_ecdh_derive";
+    const char *pers = "lwm2m_curve25519_derive";
     ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,
                                (const unsigned char *)pers, strlen(pers));
     if (ret != 0) {
@@ -96,10 +97,10 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
         goto cleanup;
     }
 
-    /* Setup ECP group for secp256r1 (P-256) */
-    ret = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1);
+    /* Setup ECP group for Curve25519 */
+    ret = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_CURVE25519);
     if (ret != 0) {
-        ESP_LOGE(TAG, "Failed to load ECP group: -0x%04x", -ret);
+        ESP_LOGE(TAG, "Failed to load Curve25519 group: -0x%04x", -ret);
         ret = -2;
         goto cleanup;
     }
@@ -112,25 +113,19 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
         goto cleanup;
     }
 
-    /* Load peer's public key (assuming uncompressed format: 0x04 + 32 bytes X + 32 bytes Y) */
-    if (public_key[0] != 0x04) {
-        ESP_LOGE(TAG, "Unsupported public key format (expected uncompressed)");
-        ret = -1;
-        goto cleanup;
-    }
-
-    ret = mbedtls_ecp_point_read_binary(&grp, &peer_public_point, public_key, 65);
+    /* Load public key directly for Curve25519 (32 bytes, no prefix needed) */
+    ret = mbedtls_ecp_point_read_binary(&grp, &peer_public_point, public_key, 32);
     if (ret != 0) {
-        ESP_LOGE(TAG, "Failed to load public key: -0x%04x", -ret);
+        ESP_LOGE(TAG, "Failed to load Curve25519 public key: -0x%04x", -ret);
         ret = -2;
         goto cleanup;
     }
 
-    /* Compute the shared secret using ECDH */
+    /* Compute the shared secret using ECDH with Curve25519 */
     ret = mbedtls_ecdh_compute_shared(&grp, &shared_secret_mpi, &peer_public_point, &private_mpi,
                                      mbedtls_ctr_drbg_random, &ctr_drbg);
     if (ret != 0) {
-        ESP_LOGE(TAG, "ECDH computation failed: -0x%04x", -ret);
+        ESP_LOGE(TAG, "Curve25519 ECDH computation failed: -0x%04x", -ret);
         ret = -2;
         goto cleanup;
     }
@@ -159,7 +154,7 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
         goto cleanup;
     }
 
-    ESP_LOGI(TAG, "ECDH AES key derivation successful");
+    ESP_LOGI(TAG, "Curve25519 AES key derivation successful");
     ret = 0;
 
 cleanup:

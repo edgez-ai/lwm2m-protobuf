@@ -14,10 +14,10 @@ extern "C" {
  * This library provides utilities for working with LwM2M protobuf messages,
  * including cryptographic operations for secure device communications.
  * 
- * Example usage for ECDH AES key derivation:
+ * Example usage for Curve25519 AES key derivation:
  *
- *   uint8_t peer_public_key[65];  // 0x04 + 32-byte X + 32-byte Y (uncompressed P-256)
- *   uint8_t our_private_key[32];  // 32-byte private key for P-256
+ *   uint8_t peer_public_key[32];  // 32-byte Curve25519 public key
+ *   uint8_t our_private_key[32];  // 32-byte Curve25519 private key
  *   uint8_t derived_aes_key[32];  // Output: 256-bit AES key
  *
  *   // Simple derivation (recommended for most use cases)
@@ -70,12 +70,12 @@ extern "C" {
 
  int lwm2m_read_factory_partition(const uint8_t *buffer, const size_t buffer_len, lwm2m_FactoryPartition *partition);
 
-/* ECDH AES key derivation function
- * Derives a 256-bit AES key using ECDH key exchange and HKDF
+/* Curve25519 AES key derivation function
+ * Derives a 256-bit AES key using Curve25519 ECDH key exchange and HKDF
  * 
  * Parameters:
- *  - public_key: Peer's public key (65 bytes for uncompressed P-256)
- *  - private_key: Our private key (32 bytes for P-256)
+ *  - public_key: Peer's Curve25519 public key (32 bytes)
+ *  - private_key: Our Curve25519 private key (32 bytes)
  *  - derived_key: Output buffer for derived AES key (32 bytes)
  *  - salt: Optional salt for HKDF (can be NULL)
  *  - salt_len: Length of salt (0 if salt is NULL)
@@ -85,7 +85,7 @@ extern "C" {
  * Return codes:
  *  0  success
  * -1  invalid arguments
- * -2  ECDH computation failure
+ * -2  Curve25519 computation failure
  * -3  HKDF derivation failure
  */
 int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_key,

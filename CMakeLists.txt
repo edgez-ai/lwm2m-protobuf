@@ -2,19 +2,17 @@
 
 # Check if this is being built as an ESP-IDF component
 if(DEFINED IDF_PATH)
-    # ESP-IDF component build
-    set(COMPONENT_SRCS 
-        "src/lwm2m.pb.c"
-        "src/lwm2m_helpers.c"
+    # ESP-IDF component build using modern idf_component_register
+    idf_component_register(
+        SRCS 
+            "src/lwm2m.pb.c"
+            "src/lwm2m_helpers.c"
+        INCLUDE_DIRS 
+            "include"
+        REQUIRES 
+            nanopb 
+            mbedtls
     )
-    
-    set(COMPONENT_ADD_INCLUDEDIRS 
-        "include"
-    )
-    
-    set(COMPONENT_REQUIRES nanopb)
-    
-    register_component()
     
     # Set C standard for ESP-IDF
     target_compile_features(${COMPONENT_LIB} PRIVATE c_std_99)

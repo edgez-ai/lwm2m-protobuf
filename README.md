@@ -174,11 +174,69 @@ python3 -m pip install --upgrade protobuf
 The current script still works despite the warning; address it proactively for
 future compatibility.
 
+## Cryptographic Functions
+
+This library now includes ECDH (Elliptic Curve Diffie-Hellman) AES key derivation functions for secure LwM2M device communication.
+
+### ECDH AES Key Derivation
+
+Two functions are provided for deriving AES-256 keys from ECDH shared secrets:
+
+#### Simple Key Derivation
+
+```c
+#include "lwm2m_helpers.h"
+
+uint8_t peer_public_key[65];  // 0x04 + 32-byte X + 32-byte Y (uncompressed P-256)
+uint8_t our_private_key[32];  // 32-byte private key for P-256
+uint8_t derived_aes_key[32];  // Output: 256-bit AES key
+
+int result = lwm2m_ecdh_derive_aes_key_simple(peer_public_key, our_private_key, derived_aes_key);
+if (result == 0) {
+    // Use derived_aes_key for AES-256-GCM encryption/decryption
+    printf("Key derivation successful!\n");
+} else {
+    printf("Key derivation failed with code: %d\n", result);
+}
+```
+
+#### Advanced Key Derivation with Salt and Info
+
+```c
+const char *salt = "my-application-salt";
+const char *info = "LwM2M-Device-Key";
+
+int result = lwm2m_ecdh_derive_aes_key(peer_public_key, our_private_key, derived_aes_key,
+                                      (const uint8_t *)salt, strlen(salt),
+                                      (const uint8_t *)info, strlen(info));
+```
+
+### Requirements
+
+- **ESP-IDF**: Uses built-in mbedTLS library (automatically included)
+- **Other platforms**: Requires linking against mbedTLS
+
+### Error Codes
+
+- `0`: Success
+- `-1`: Invalid arguments (NULL pointers)
+- `-2`: ECDH computation failure
+- `-3`: HKDF derivation failure
+
+### Security Notes
+
+- Uses NIST P-256 (secp256r1) elliptic curve
+- HKDF-SHA256 for key derivation from shared secret
+- Properly clears sensitive data from memory
+- Thread-safe implementation
+
 ## Future Enhancements
 
 * Add nanopb options file to fine-tune field allocation / max sizes.
-* Provide helper encode/decode functions in `lwm2m_helpers.c`.
+* ✅ ~~Provide helper encode/decode functions in `lwm2m_helpers.c`.~~ (Added ECDH AES key derivation)
 * Create a CMakeLists.txt wrapper (if desired by consuming projects).
+* Add more cryptographic functions (ChaCha20-Poly1305, digital signatures)
+* Add unit tests for cryptographic functions
 
 ---
 MIT or the license you prefer for your schema/code (adjust as necessary).

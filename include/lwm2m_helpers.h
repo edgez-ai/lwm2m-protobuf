@@ -105,13 +105,6 @@ int lwm2m_curve25519_public_from_private(const uint8_t *private_key,
 int lwm2m_ecdh_derive_aes_key_simple(const uint8_t *public_key, const uint8_t *private_key,
                                      uint8_t *derived_key);
 
-/* Convenience helper to derive a shared key using Curve25519 ECDH.
- * Returns 0 on success, negative error code on failure.
- */
-int lwm2m_crypto_curve25519_shared_key(const uint8_t *peer_public_key,
-                                       const uint8_t *our_private_key,
-                                       uint8_t *shared_key_out);
-
 /* ChaCha20-Poly1305 encryption function
  * Encrypts data using ChaCha20-Poly1305 AEAD cipher
  * 
@@ -170,21 +163,6 @@ int lwm2m_chacha20_poly1305_decrypt(const uint8_t *key, const uint8_t *nonce,
  * -1  RNG failure
  */
 int lwm2m_chacha20_generate_nonce(uint8_t *nonce);
-
-/* Convenience helper to encrypt data with a shared key. Generates nonce internally. */
-int lwm2m_crypto_encrypt_with_shared_key(const uint8_t *shared_key,
-                                         const uint8_t *plaintext, size_t plaintext_len,
-                                         const uint8_t *aad, size_t aad_len,
-                                         uint8_t *nonce_out,
-                                         uint8_t *ciphertext_out, uint8_t *tag_out);
-
-/* Convenience helper to decrypt data with a shared key. */
-int lwm2m_crypto_decrypt_with_shared_key(const uint8_t *shared_key,
-                                         const uint8_t *nonce,
-                                         const uint8_t *ciphertext, size_t ciphertext_len,
-                                         const uint8_t *aad, size_t aad_len,
-                                         const uint8_t *tag,
-                                         uint8_t *plaintext_out);
 
 #ifdef __cplusplus
 } /* extern "C" */

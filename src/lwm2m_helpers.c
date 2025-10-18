@@ -9,6 +9,8 @@
 
 #ifdef ESP_PLATFORM
 /* ESP-IDF includes for cryptographic functions */
+#define MBEDTLS_ALLOW_PRIVATE_ACCESS
+#include "mbedtls/private_access.h"
 #include "mbedtls/ecdh.h"
 #include "mbedtls/ecp.h"
 #include "mbedtls/hkdf.h"
@@ -62,6 +64,91 @@ int lwm2m_read_factory_partition(const uint8_t *buffer, const size_t buffer_len,
 }
 
 #ifdef ESP_PLATFORM
+int lwm2m_curve25519_public_from_private(const uint8_t *private_key,
+                                         uint8_t *public_key_out) {
+    if (!private_key || !public_key_out) {
+        return -1;
+    }
+
+    int ret = 0;
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_point pub_point;
+    mbedtls_mpi private_mpi;
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    uint8_t private_key_clamped[32];
+    uint8_t private_key_be[32];
+    uint8_t public_key_be[32];
+
+    mbedtls_ecp_group_init(&grp);
+    mbedtls_ecp_point_init(&pub_point);
+    mbedtls_mpi_init(&private_mpi);
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+
+    /* Seed RNG for mbedTLS scalar multiplication blinding */
+    const char *pers = "lwm2m_curve25519_pubgen";
+    ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,
+                                (const unsigned char *)pers, strlen(pers));
+    if (ret != 0) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    ret = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_CURVE25519);
+    if (ret != 0) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    memcpy(private_key_clamped, private_key, sizeof(private_key_clamped));
+    private_key_clamped[0] &= 248;
+    private_key_clamped[31] &= 127;
+    private_key_clamped[31] |= 64;
+
+    for (size_t i = 0; i < sizeof(private_key_be); i++) {
+        private_key_be[i] = private_key_clamped[sizeof(private_key_be) - 1 - i];
+    }
+
+    ret = mbedtls_mpi_read_binary(&private_mpi, private_key_be, sizeof(private_key_be));
+    if (ret != 0) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    ret = mbedtls_ecp_mul(&grp, &pub_point, &private_mpi, &grp.G,
+                          mbedtls_ctr_drbg_random, &ctr_drbg);
+    if (ret != 0) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    ret = mbedtls_mpi_write_binary(&pub_point.MBEDTLS_PRIVATE(X), public_key_be, sizeof(public_key_be));
+    if (ret != 0) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    for (size_t i = 0; i < sizeof(public_key_be); i++) {
+        public_key_out[i] = public_key_be[sizeof(public_key_be) - 1 - i];
+    }
+
+    ret = 0;
+
+cleanup:
+    mbedtls_platform_zeroize(private_key_clamped, sizeof(private_key_clamped));
+    mbedtls_platform_zeroize(private_key_be, sizeof(private_key_be));
+    mbedtls_platform_zeroize(public_key_be, sizeof(public_key_be));
+
+    mbedtls_ecp_group_free(&grp);
+    mbedtls_ecp_point_free(&pub_point);
+    mbedtls_mpi_free(&private_mpi);
+    mbedtls_entropy_free(&entropy);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+
+    return ret;
+}
+
 int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_key,
                               uint8_t *derived_key, const uint8_t *salt, size_t salt_len,
                               const uint8_t *info, size_t info_len) {
@@ -78,6 +165,9 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
     uint8_t shared_secret[32]; /* Curve25519 shared secret is 32 bytes */
+    uint8_t private_key_clamped[32];
+    uint8_t private_key_be[32];
+    uint8_t public_key_be[32];
     
     /* Initialize all contexts and structures */
     mbedtls_ecp_group_init(&grp);
@@ -105,18 +195,49 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
         goto cleanup;
     }
 
+    /* Clamp private key per RFC 7748 requirements */
+    memcpy(private_key_clamped, private_key, sizeof(private_key_clamped));
+    private_key_clamped[0] &= 248;
+    private_key_clamped[31] &= 127;
+    private_key_clamped[31] |= 64;
+
+    /* Convert little-endian private scalar to big-endian for mbedTLS */
+    for (size_t i = 0; i < sizeof(private_key_be); i++) {
+        private_key_be[i] = private_key_clamped[sizeof(private_key_be) - 1 - i];
+    }
+
     /* Load our private key */
-    ret = mbedtls_mpi_read_binary(&private_mpi, private_key, 32);
+    ret = mbedtls_mpi_read_binary(&private_mpi, private_key_be, sizeof(private_key_be));
     if (ret != 0) {
         ESP_LOGE(TAG, "Failed to load private key: -0x%04x", -ret);
         ret = -2;
         goto cleanup;
     }
 
-    /* Load public key directly for Curve25519 (32 bytes, no prefix needed) */
-    ret = mbedtls_ecp_point_read_binary(&grp, &peer_public_point, public_key, 32);
+    /* Convert little-endian public key representation to big-endian for mbedTLS */
+    for (size_t i = 0; i < sizeof(public_key_be); i++) {
+        public_key_be[i] = public_key[sizeof(public_key_be) - 1 - i];
+    }
+
+    /* Load peer public key for Curve25519 (Montgomery form uses only X coordinate) */
+    ret = mbedtls_mpi_read_binary(&peer_public_point.MBEDTLS_PRIVATE(X), public_key_be, sizeof(public_key_be));
     if (ret != 0) {
-        ESP_LOGE(TAG, "Failed to load Curve25519 public key: -0x%04x", -ret);
+        ESP_LOGE(TAG, "Failed to load Curve25519 public key X coordinate: -0x%04x", -ret);
+        ret = -2;
+        goto cleanup;
+    }
+
+    /* For Montgomery curves, enforce canonical projective representation (Y=0, Z=1) */
+    ret = mbedtls_mpi_lset(&peer_public_point.MBEDTLS_PRIVATE(Y), 0);
+    if (ret != 0) {
+        ESP_LOGE(TAG, "Failed to initialize Curve25519 public key Y coordinate: -0x%04x", -ret);
+        ret = -2;
+        goto cleanup;
+    }
+
+    ret = mbedtls_mpi_lset(&peer_public_point.MBEDTLS_PRIVATE(Z), 1);
+    if (ret != 0) {
+        ESP_LOGE(TAG, "Failed to initialize Curve25519 public key Z coordinate: -0x%04x", -ret);
         ret = -2;
         goto cleanup;
     }
@@ -136,6 +257,13 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
         ESP_LOGE(TAG, "Failed to export shared secret: -0x%04x", -ret);
         ret = -2;
         goto cleanup;
+    }
+
+    /* Convert shared secret to little-endian to align with RFC 7748 expectations */
+    for (size_t i = 0; i < sizeof(shared_secret) / 2; i++) {
+        uint8_t tmp = shared_secret[i];
+        shared_secret[i] = shared_secret[sizeof(shared_secret) - 1 - i];
+        shared_secret[sizeof(shared_secret) - 1 - i] = tmp;
     }
 
     /* Use HKDF-SHA256 to derive the AES key from the shared secret */
@@ -160,6 +288,9 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
 cleanup:
     /* Clear sensitive data */
     mbedtls_platform_zeroize(shared_secret, sizeof(shared_secret));
+    mbedtls_platform_zeroize(private_key_clamped, sizeof(private_key_clamped));
+    mbedtls_platform_zeroize(private_key_be, sizeof(private_key_be));
+    mbedtls_platform_zeroize(public_key_be, sizeof(public_key_be));
     
     /* Free all contexts and structures */
     mbedtls_ecp_group_free(&grp);
@@ -173,6 +304,13 @@ cleanup:
 }
 
 #else /* !ESP_PLATFORM */
+
+int lwm2m_curve25519_public_from_private(const uint8_t *private_key,
+                                         uint8_t *public_key_out) {
+    (void)private_key;
+    (void)public_key_out;
+    return -2;
+}
 
 int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_key,
                               uint8_t *derived_key, const uint8_t *salt, size_t salt_len,

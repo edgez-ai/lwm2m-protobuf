@@ -92,6 +92,13 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
                               uint8_t *derived_key, const uint8_t *salt, size_t salt_len,
                               const uint8_t *info, size_t info_len);
 
+/* Derive Curve25519 public key (little-endian) from a private key (little-endian).
+ * Applies required clamping internally.
+ * Returns 0 on success, negative error code on failure.
+ */
+int lwm2m_curve25519_public_from_private(const uint8_t *private_key,
+                                         uint8_t *public_key_out);
+
 /* Helper function to derive AES key with default parameters (no salt/info)
  * Simplified version that uses empty salt and "LwM2M-AES-Key" as info
  */

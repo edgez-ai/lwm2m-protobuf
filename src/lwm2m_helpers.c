@@ -330,6 +330,55 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
 
 #endif /* ESP_PLATFORM */
 
+int lwm2m_crypto_curve25519_shared_key(const uint8_t *peer_public_key,
+                                       const uint8_t *our_private_key,
+                                       uint8_t *shared_key_out) {
+    if (!peer_public_key || !our_private_key || !shared_key_out) {
+        return -1;
+    }
+
+    return lwm2m_ecdh_derive_aes_key_simple(peer_public_key, our_private_key, shared_key_out);
+}
+
+int lwm2m_crypto_encrypt_with_shared_key(const uint8_t *shared_key,
+                                         const uint8_t *plaintext, size_t plaintext_len,
+                                         const uint8_t *aad, size_t aad_len,
+                                         uint8_t *nonce_out,
+                                         uint8_t *ciphertext_out, uint8_t *tag_out) {
+    if (!shared_key || !nonce_out || !tag_out) {
+        return -1;
+    }
+    if (plaintext_len > 0 && (!plaintext || !ciphertext_out)) {
+        return -1;
+    }
+
+    int ret = lwm2m_chacha20_generate_nonce(nonce_out);
+    if (ret != 0) {
+        return ret;
+    }
+
+    return lwm2m_chacha20_poly1305_encrypt(shared_key, nonce_out,
+                                           plaintext, plaintext_len,
+                                           aad, aad_len,
+                                           ciphertext_out, tag_out);
+}
+
+int lwm2m_crypto_decrypt_with_shared_key(const uint8_t *shared_key,
+                                         const uint8_t *nonce,
+                                         const uint8_t *ciphertext, size_t ciphertext_len,
+                                         const uint8_t *aad, size_t aad_len,
+                                         const uint8_t *tag,
+                                         uint8_t *plaintext_out) {
+    if (!shared_key || !nonce || !tag || (ciphertext_len > 0 && (!ciphertext || !plaintext_out))) {
+        return -1;
+    }
+
+    return lwm2m_chacha20_poly1305_decrypt(shared_key, nonce,
+                                           ciphertext, ciphertext_len,
+                                           aad, aad_len,
+                                           tag, plaintext_out);
+}
+
 int lwm2m_ecdh_derive_aes_key_simple(const uint8_t *public_key, const uint8_t *private_key,
                                      uint8_t *derived_key) {
     const char *info = "LwM2M-AES-Key";

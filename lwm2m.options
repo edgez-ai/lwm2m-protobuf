@@ -33,9 +33,9 @@ lwm2m.LwM2MDeviceChallengeAnswer.signature         max_size:128
 # Bootstrap response/message
 lwm2m.LwM2MBootstrapResponse.nounce             max_size:12 fixed_length:true
 lwm2m.LwM2MBootstrapResponse.payload            max_size:512
-lwm2m.LwM2MBootstrapMessage.admin_public_key    max_size:64
-lwm2m.LwM2MBootstrapMessage.aes_key             max_size:32 fixed_length:true
-lwm2m.LwM2MBootstrapMessage.resources           max_count:16
+# lwm2m.LwM2MBootstrapMessage.admin_public_key    max_size:64
+# lwm2m.LwM2MBootstrapMessage.aes_key             max_size:32 fixed_length:true
+# lwm2m.LwM2MBootstrapMessage.resources           max_count:16
 
 # ResourceSet / ResourceGet value variants
 lwm2m.LwM2MResourceSet.bytes_value              max_size:256
@@ -49,6 +49,7 @@ lwm2m.FactoryPartition.public_key               max_size:32
 lwm2m.FactoryPartition.private_key              max_size:32
 lwm2m.FactoryPartition.bootstrap_server         max_size:128
 lwm2m.FactoryPartition.signature                max_size:64
+lwm2m.FactoryPartition.signature_cert           max_size:32
 
 # (Optional) Tune map/repeated limits if you later add those fields
 # lwm2m.LwM2MDeviceMap.devices                  max_count:32

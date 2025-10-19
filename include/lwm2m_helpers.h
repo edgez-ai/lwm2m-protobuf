@@ -186,6 +186,27 @@ int lwm2m_crypto_decrypt_with_shared_key(const uint8_t *shared_key,
                                          const uint8_t *tag,
                                          uint8_t *plaintext_out);
 
+/* Verify an Ed25519 signature using a raw 32-byte public key.
+ *
+ * Parameters:
+ *  - public_key: Pointer to 32-byte Ed25519 public key (raw format)
+ *  - public_key_len: Length of public key (must be 32)
+ *  - message: Pointer to the message that was signed
+ *  - message_len: Length of the message in bytes
+ *  - signature: Pointer to signature buffer (expected 64 bytes)
+ *  - signature_len: Length of the signature buffer
+ *
+ * Return codes:
+ *  0  success (signature valid)
+ * -1  invalid arguments
+ * -2  unsupported platform or configuration
+ * -3  public key parse failure
+ * -4  signature verification failure
+ */
+int lwm2m_ed25519_verify_signature(const uint8_t *public_key, size_t public_key_len,
+                                   const uint8_t *message, size_t message_len,
+                                   const uint8_t *signature, size_t signature_len);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -20,6 +20,8 @@
 #include "mbedtls/platform_util.h"
 #include "mbedtls/chacha20.h"
 #include "mbedtls/poly1305.h"
+#include "mbedtls/pk.h"
+#include "mbedtls/error.h"
 #include "esp_log.h"
 
 static const char *TAG = "LWM2M_CRYPTO";
@@ -328,6 +330,18 @@ int lwm2m_ecdh_derive_aes_key(const uint8_t *public_key, const uint8_t *private_
     return -2;
 }
 
+int lwm2m_ed25519_verify_signature(const uint8_t *public_key, size_t public_key_len,
+                                   const uint8_t *message, size_t message_len,
+                                   const uint8_t *signature, size_t signature_len) {
+    (void)public_key;
+    (void)public_key_len;
+    (void)message;
+    (void)message_len;
+    (void)signature;
+    (void)signature_len;
+    return -2;
+}
+
 #endif /* ESP_PLATFORM */
 
 int lwm2m_crypto_curve25519_shared_key(const uint8_t *peer_public_key,
@@ -385,6 +399,62 @@ int lwm2m_ecdh_derive_aes_key_simple(const uint8_t *public_key, const uint8_t *p
     return lwm2m_ecdh_derive_aes_key(public_key, private_key, derived_key, 
                                     NULL, 0, /* no salt */
                                     (const uint8_t *)info, strlen(info));
+}
+
+int lwm2m_ed25519_verify_signature(const uint8_t *public_key, size_t public_key_len,
+                                   const uint8_t *message, size_t message_len,
+                                   const uint8_t *signature, size_t signature_len) {
+    if (!public_key || !message || !signature) {
+        ESP_LOGE(TAG, "Ed25519 verify: NULL parameter");
+        return -1;
+    }
+
+    if (public_key_len != 32 || signature_len != 64) {
+        ESP_LOGE(TAG, "Ed25519 verify: invalid lengths (pk=%u sig=%u)",
+                 (unsigned)public_key_len, (unsigned)signature_len);
+        return -1;
+    }
+
+#if defined(MBEDTLS_PK_C) && defined(MBEDTLS_PK_PARSE_C)
+    static const uint8_t ed25519_spki_prefix[] = {
+        0x30, 0x2a,             /* SEQUENCE, length 42 */
+        0x30, 0x05,             /* SEQUENCE, length 5 */
+        0x06, 0x03, 0x2b, 0x65, 0x70, /* OID 1.3.101.112 (Ed25519) */
+        0x03, 0x21, 0x00        /* BIT STRING, length 33 (0 + 32-byte key) */
+    };
+
+    uint8_t spki[sizeof(ed25519_spki_prefix) + 32];
+    memcpy(spki, ed25519_spki_prefix, sizeof(ed25519_spki_prefix));
+    memcpy(spki + sizeof(ed25519_spki_prefix), public_key, 32);
+
+    mbedtls_pk_context pk;
+    mbedtls_pk_init(&pk);
+
+    int ret = mbedtls_pk_parse_public_key(&pk, spki, sizeof(spki));
+    if (ret != 0) {
+        char errbuf[128];
+        mbedtls_strerror(ret, errbuf, sizeof(errbuf));
+        ESP_LOGE(TAG, "Failed to parse Ed25519 public key: %s", errbuf);
+        mbedtls_pk_free(&pk);
+        return -3;
+    }
+
+    ret = mbedtls_pk_verify(&pk, MBEDTLS_MD_NONE, message, message_len,
+                             signature, signature_len);
+    mbedtls_pk_free(&pk);
+
+    if (ret != 0) {
+        char errbuf[128];
+        mbedtls_strerror(ret, errbuf, sizeof(errbuf));
+        ESP_LOGE(TAG, "Ed25519 signature verification failed: %s", errbuf);
+        return -4;
+    }
+
+    return 0;
+#else
+    ESP_LOGE(TAG, "Ed25519 verification not supported by current mbedTLS configuration");
+    return -2;
+#endif
 }
 
 #ifdef ESP_PLATFORM

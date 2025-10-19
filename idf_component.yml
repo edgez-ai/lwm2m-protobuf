@@ -7,3 +7,4 @@ documentation: https://github.com/edgez-ai/lwm2m-protobuf/blob/main/README.md
 dependencies:
   # Add nanopb as a dependency since it's required for protobuf functionality
   nikas-belogolov/nanopb: "^1.0.0"
+  espressif/libsodium: "^1.0.20~2"

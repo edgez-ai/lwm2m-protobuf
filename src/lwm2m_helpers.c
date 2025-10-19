@@ -23,6 +23,7 @@
 #include "mbedtls/pk.h"
 #include "mbedtls/error.h"
 #include "esp_log.h"
+#include <sodium.h>
 
 static const char *TAG = "LWM2M_CRYPTO";
 
@@ -415,12 +416,25 @@ int lwm2m_ed25519_verify_signature(const uint8_t *public_key, size_t public_key_
         return -1;
     }
 
-#if defined(MBEDTLS_PK_C) && defined(MBEDTLS_PK_PARSE_C)
+#ifdef ESP_PLATFORM
+    if (sodium_init() == -1) {
+        ESP_LOGE(TAG, "libsodium initialization failed");
+        return -2;
+    }
+
+    if (crypto_sign_ed25519_verify_detached(signature, message,
+            (unsigned long long)message_len, public_key) != 0) {
+        ESP_LOGE(TAG, "Ed25519 signature verification failed (libsodium)");
+        return -4;
+    }
+
+    return 0;
+#elif defined(MBEDTLS_PK_C) && defined(MBEDTLS_PK_PARSE_C)
     static const uint8_t ed25519_spki_prefix[] = {
-        0x30, 0x2a,             /* SEQUENCE, length 42 */
-        0x30, 0x05,             /* SEQUENCE, length 5 */
-        0x06, 0x03, 0x2b, 0x65, 0x70, /* OID 1.3.101.112 (Ed25519) */
-        0x03, 0x21, 0x00        /* BIT STRING, length 33 (0 + 32-byte key) */
+        0x30, 0x2a,
+        0x30, 0x05,
+        0x06, 0x03, 0x2b, 0x65, 0x70,
+        0x03, 0x21, 0x00
     };
 
     uint8_t spki[sizeof(ed25519_spki_prefix) + 32];
@@ -452,7 +466,7 @@ int lwm2m_ed25519_verify_signature(const uint8_t *public_key, size_t public_key_
 
     return 0;
 #else
-    ESP_LOGE(TAG, "Ed25519 verification not supported by current mbedTLS configuration");
+    ESP_LOGE(TAG, "Ed25519 verification not supported by current configuration");
     return -2;
 #endif
 }

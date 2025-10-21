@@ -32,7 +32,25 @@ message LwM2MMessage {
     oneof body {
 		// Future message types here
 		bytes encrypted_data = 100;  // inside is encrypted protobuf message
+		LwM2MCommand command = 101;
+		LwM2MStatusReport status_report = 102;
     }
+}
+
+message LwM2MCommand {
+	oneof body {
+		// Future message types here
+		bool reset = 1;  // inside is encrypted protobuf message
+		bool reboot = 2;  // inside is encrypted protobuf message
+    }
+}
+
+
+
+message LwM2MStatusReport {
+    sint32 battery_level = 1;
+	sint32 uptime = 2;
+	sint32 temperature = 3;
 }
 
 message LwM2MDevice {

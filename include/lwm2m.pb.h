@@ -22,6 +22,21 @@ typedef enum _lwm2m_LwM2MBootstrapResultCode {
 } lwm2m_LwM2MBootstrapResultCode;
 
 /* Struct definitions */
+typedef struct _lwm2m_LwM2MCommand {
+    pb_size_t which_body;
+    union {
+        /* Future message types here */
+        bool reset; /* inside is encrypted protobuf message */
+        bool reboot; /* inside is encrypted protobuf message */
+    } body;
+} lwm2m_LwM2MCommand;
+
+typedef struct _lwm2m_LwM2MStatusReport {
+    int32_t battery_level;
+    int32_t uptime;
+    int32_t temperature;
+} lwm2m_LwM2MStatusReport;
+
 typedef struct _lwm2m_LwM2MMessage {
     int32_t model;
     uint32_t serial; /* also same meaning for node_id in mesh network */
@@ -29,6 +44,8 @@ typedef struct _lwm2m_LwM2MMessage {
     union {
         /* Future message types here */
         pb_callback_t encrypted_data; /* inside is encrypted protobuf message */
+        lwm2m_LwM2MCommand command;
+        lwm2m_LwM2MStatusReport status_report;
     } body;
 } lwm2m_LwM2MMessage;
 
@@ -155,6 +172,8 @@ extern "C" {
 
 
 
+
+
 #define lwm2m_LwM2MBootstrapResponse_code_ENUMTYPE lwm2m_LwM2MBootstrapResultCode
 
 
@@ -164,6 +183,8 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define lwm2m_LwM2MMessage_init_default          {0, 0, 0, {{{NULL}, NULL}}}
+#define lwm2m_LwM2MCommand_init_default          {0, {0}}
+#define lwm2m_LwM2MStatusReport_init_default     {0, 0, 0}
 #define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
 #define lwm2m_LwM2MDeviceMap_init_default        {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_default {0, false, lwm2m_LwM2MDevice_init_default}
@@ -176,6 +197,8 @@ extern "C" {
 #define lwm2m_LwM2MResourceSet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, 0, 0}
 #define lwm2m_LwM2MMessage_init_zero             {0, 0, 0, {{{NULL}, NULL}}}
+#define lwm2m_LwM2MCommand_init_zero             {0, {0}}
+#define lwm2m_LwM2MStatusReport_init_zero        {0, 0, 0}
 #define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
 #define lwm2m_LwM2MDeviceMap_init_zero           {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_zero {0, false, lwm2m_LwM2MDevice_init_zero}
@@ -189,9 +212,16 @@ extern "C" {
 #define lwm2m_FactoryPartition_init_zero         {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
+#define lwm2m_LwM2MCommand_reset_tag             1
+#define lwm2m_LwM2MCommand_reboot_tag            2
+#define lwm2m_LwM2MStatusReport_battery_level_tag 1
+#define lwm2m_LwM2MStatusReport_uptime_tag       2
+#define lwm2m_LwM2MStatusReport_temperature_tag  3
 #define lwm2m_LwM2MMessage_model_tag             1
 #define lwm2m_LwM2MMessage_serial_tag            2
 #define lwm2m_LwM2MMessage_encrypted_data_tag    100
+#define lwm2m_LwM2MMessage_command_tag           101
+#define lwm2m_LwM2MMessage_status_report_tag     102
 #define lwm2m_LwM2MDevice_model_tag              1
 #define lwm2m_LwM2MDevice_serial_tag             2
 #define lwm2m_LwM2MDevice_public_key_tag         3
@@ -249,9 +279,26 @@ extern "C" {
 #define lwm2m_LwM2MMessage_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
 X(a, STATIC,   SINGULAR, UINT32,   serial,            2) \
-X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 100)
+X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 100) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (body,command,body.command), 101) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (body,status_report,body.status_report), 102)
 #define lwm2m_LwM2MMessage_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MMessage_DEFAULT NULL
+#define lwm2m_LwM2MMessage_body_command_MSGTYPE lwm2m_LwM2MCommand
+#define lwm2m_LwM2MMessage_body_status_report_MSGTYPE lwm2m_LwM2MStatusReport
+
+#define lwm2m_LwM2MCommand_FIELDLIST(X, a) \
+X(a, STATIC,   ONEOF,    BOOL,     (body,reset,body.reset),   1) \
+X(a, STATIC,   ONEOF,    BOOL,     (body,reboot,body.reboot),   2)
+#define lwm2m_LwM2MCommand_CALLBACK NULL
+#define lwm2m_LwM2MCommand_DEFAULT NULL
+
+#define lwm2m_LwM2MStatusReport_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   battery_level,     1) \
+X(a, STATIC,   SINGULAR, SINT32,   uptime,            2) \
+X(a, STATIC,   SINGULAR, SINT32,   temperature,       3)
+#define lwm2m_LwM2MStatusReport_CALLBACK NULL
+#define lwm2m_LwM2MStatusReport_DEFAULT NULL
 
 #define lwm2m_LwM2MDevice_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
@@ -352,6 +399,8 @@ X(a, STATIC,   SINGULAR, UINT32,   serial_number,     9)
 #define lwm2m_FactoryPartition_DEFAULT NULL
 
 extern const pb_msgdesc_t lwm2m_LwM2MMessage_msg;
+extern const pb_msgdesc_t lwm2m_LwM2MCommand_msg;
+extern const pb_msgdesc_t lwm2m_LwM2MStatusReport_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDevice_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDeviceMap_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDeviceMap_DevicesEntry_msg;
@@ -366,6 +415,8 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define lwm2m_LwM2MMessage_fields &lwm2m_LwM2MMessage_msg
+#define lwm2m_LwM2MCommand_fields &lwm2m_LwM2MCommand_msg
+#define lwm2m_LwM2MStatusReport_fields &lwm2m_LwM2MStatusReport_msg
 #define lwm2m_LwM2MDevice_fields &lwm2m_LwM2MDevice_msg
 #define lwm2m_LwM2MDeviceMap_fields &lwm2m_LwM2MDeviceMap_msg
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_fields &lwm2m_LwM2MDeviceMap_DevicesEntry_msg
@@ -388,10 +439,12 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 #define LWM2M_LWM2M_PB_H_MAX_SIZE                lwm2m_LwM2MBootstrapResponse_size
 #define lwm2m_FactoryPartition_size              334
 #define lwm2m_LwM2MBootstrapResponse_size        523
+#define lwm2m_LwM2MCommand_size                  2
 #define lwm2m_LwM2MDeviceChallengeAnswer_size    165
 #define lwm2m_LwM2MDeviceChallenge_size          40
 #define lwm2m_LwM2MResourceGet_size              277
 #define lwm2m_LwM2MResourceSet_size              277
+#define lwm2m_LwM2MStatusReport_size             18
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -50,7 +50,18 @@ message LwM2MCommand {
 message LwM2MStatusReport {
     sint32 battery_level = 1;
 	sint32 uptime = 2;
-	sint32 temperature = 3;
+	map<uint32, LwM2MSensorValue> data = 100; // key is object id (high 16 bits) + resource id (low 16 bits)
+}
+
+message LwM2MSensorValue {
+	oneof value {
+		bytes bytes_value = 1;
+		string string_value = 2;
+		sint32 int_value = 3;
+		bool bool_value = 4;
+		float float_value = 5;
+		double double_value = 6;
+	}
 }
 
 message LwM2MDevice {

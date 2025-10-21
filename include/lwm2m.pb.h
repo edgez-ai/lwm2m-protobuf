@@ -34,7 +34,7 @@ typedef struct _lwm2m_LwM2MCommand {
 typedef struct _lwm2m_LwM2MStatusReport {
     int32_t battery_level;
     int32_t uptime;
-    int32_t temperature;
+    pb_callback_t data; /* key is object id (high 16 bits) + resource id (low 16 bits) */
 } lwm2m_LwM2MStatusReport;
 
 typedef struct _lwm2m_LwM2MMessage {
@@ -48,6 +48,24 @@ typedef struct _lwm2m_LwM2MMessage {
         lwm2m_LwM2MStatusReport status_report;
     } body;
 } lwm2m_LwM2MMessage;
+
+typedef struct _lwm2m_LwM2MSensorValue {
+    pb_size_t which_value;
+    union {
+        pb_callback_t bytes_value;
+        pb_callback_t string_value;
+        int32_t int_value;
+        bool bool_value;
+        float float_value;
+        double double_value;
+    } value;
+} lwm2m_LwM2MSensorValue;
+
+typedef struct _lwm2m_LwM2MStatusReport_DataEntry {
+    uint32_t key;
+    bool has_value;
+    lwm2m_LwM2MSensorValue value;
+} lwm2m_LwM2MStatusReport_DataEntry;
 
 typedef PB_BYTES_ARRAY_T(64) lwm2m_LwM2MDevice_public_key_t;
 typedef struct _lwm2m_LwM2MDevice {
@@ -174,6 +192,8 @@ extern "C" {
 
 
 
+
+
 #define lwm2m_LwM2MBootstrapResponse_code_ENUMTYPE lwm2m_LwM2MBootstrapResultCode
 
 
@@ -184,7 +204,9 @@ extern "C" {
 /* Initializer values for message structs */
 #define lwm2m_LwM2MMessage_init_default          {0, 0, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MCommand_init_default          {0, {0}}
-#define lwm2m_LwM2MStatusReport_init_default     {0, 0, 0}
+#define lwm2m_LwM2MStatusReport_init_default     {0, 0, {{NULL}, NULL}}
+#define lwm2m_LwM2MStatusReport_DataEntry_init_default {0, false, lwm2m_LwM2MSensorValue_init_default}
+#define lwm2m_LwM2MSensorValue_init_default      {0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
 #define lwm2m_LwM2MDeviceMap_init_default        {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_default {0, false, lwm2m_LwM2MDevice_init_default}
@@ -198,7 +220,9 @@ extern "C" {
 #define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, 0, 0}
 #define lwm2m_LwM2MMessage_init_zero             {0, 0, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MCommand_init_zero             {0, {0}}
-#define lwm2m_LwM2MStatusReport_init_zero        {0, 0, 0}
+#define lwm2m_LwM2MStatusReport_init_zero        {0, 0, {{NULL}, NULL}}
+#define lwm2m_LwM2MStatusReport_DataEntry_init_zero {0, false, lwm2m_LwM2MSensorValue_init_zero}
+#define lwm2m_LwM2MSensorValue_init_zero         {0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
 #define lwm2m_LwM2MDeviceMap_init_zero           {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_zero {0, false, lwm2m_LwM2MDevice_init_zero}
@@ -216,12 +240,20 @@ extern "C" {
 #define lwm2m_LwM2MCommand_reboot_tag            2
 #define lwm2m_LwM2MStatusReport_battery_level_tag 1
 #define lwm2m_LwM2MStatusReport_uptime_tag       2
-#define lwm2m_LwM2MStatusReport_temperature_tag  3
+#define lwm2m_LwM2MStatusReport_data_tag         100
 #define lwm2m_LwM2MMessage_model_tag             1
 #define lwm2m_LwM2MMessage_serial_tag            2
 #define lwm2m_LwM2MMessage_encrypted_data_tag    100
 #define lwm2m_LwM2MMessage_command_tag           101
 #define lwm2m_LwM2MMessage_status_report_tag     102
+#define lwm2m_LwM2MSensorValue_bytes_value_tag   1
+#define lwm2m_LwM2MSensorValue_string_value_tag  2
+#define lwm2m_LwM2MSensorValue_int_value_tag     3
+#define lwm2m_LwM2MSensorValue_bool_value_tag    4
+#define lwm2m_LwM2MSensorValue_float_value_tag   5
+#define lwm2m_LwM2MSensorValue_double_value_tag  6
+#define lwm2m_LwM2MStatusReport_DataEntry_key_tag 1
+#define lwm2m_LwM2MStatusReport_DataEntry_value_tag 2
 #define lwm2m_LwM2MDevice_model_tag              1
 #define lwm2m_LwM2MDevice_serial_tag             2
 #define lwm2m_LwM2MDevice_public_key_tag         3
@@ -296,9 +328,27 @@ X(a, STATIC,   ONEOF,    BOOL,     (body,reboot,body.reboot),   2)
 #define lwm2m_LwM2MStatusReport_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   battery_level,     1) \
 X(a, STATIC,   SINGULAR, SINT32,   uptime,            2) \
-X(a, STATIC,   SINGULAR, SINT32,   temperature,       3)
-#define lwm2m_LwM2MStatusReport_CALLBACK NULL
+X(a, CALLBACK, REPEATED, MESSAGE,  data,            100)
+#define lwm2m_LwM2MStatusReport_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MStatusReport_DEFAULT NULL
+#define lwm2m_LwM2MStatusReport_data_MSGTYPE lwm2m_LwM2MStatusReport_DataEntry
+
+#define lwm2m_LwM2MStatusReport_DataEntry_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   key,               1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
+#define lwm2m_LwM2MStatusReport_DataEntry_CALLBACK NULL
+#define lwm2m_LwM2MStatusReport_DataEntry_DEFAULT NULL
+#define lwm2m_LwM2MStatusReport_DataEntry_value_MSGTYPE lwm2m_LwM2MSensorValue
+
+#define lwm2m_LwM2MSensorValue_FIELDLIST(X, a) \
+X(a, CALLBACK, ONEOF,    BYTES,    (value,bytes_value,value.bytes_value),   1) \
+X(a, CALLBACK, ONEOF,    STRING,   (value,string_value,value.string_value),   2) \
+X(a, STATIC,   ONEOF,    SINT32,   (value,int_value,value.int_value),   3) \
+X(a, STATIC,   ONEOF,    BOOL,     (value,bool_value,value.bool_value),   4) \
+X(a, STATIC,   ONEOF,    FLOAT,    (value,float_value,value.float_value),   5) \
+X(a, STATIC,   ONEOF,    DOUBLE,   (value,double_value,value.double_value),   6)
+#define lwm2m_LwM2MSensorValue_CALLBACK pb_default_field_callback
+#define lwm2m_LwM2MSensorValue_DEFAULT NULL
 
 #define lwm2m_LwM2MDevice_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
@@ -401,6 +451,8 @@ X(a, STATIC,   SINGULAR, UINT32,   serial_number,     9)
 extern const pb_msgdesc_t lwm2m_LwM2MMessage_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MCommand_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MStatusReport_msg;
+extern const pb_msgdesc_t lwm2m_LwM2MStatusReport_DataEntry_msg;
+extern const pb_msgdesc_t lwm2m_LwM2MSensorValue_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDevice_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDeviceMap_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MDeviceMap_DevicesEntry_msg;
@@ -417,6 +469,8 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 #define lwm2m_LwM2MMessage_fields &lwm2m_LwM2MMessage_msg
 #define lwm2m_LwM2MCommand_fields &lwm2m_LwM2MCommand_msg
 #define lwm2m_LwM2MStatusReport_fields &lwm2m_LwM2MStatusReport_msg
+#define lwm2m_LwM2MStatusReport_DataEntry_fields &lwm2m_LwM2MStatusReport_DataEntry_msg
+#define lwm2m_LwM2MSensorValue_fields &lwm2m_LwM2MSensorValue_msg
 #define lwm2m_LwM2MDevice_fields &lwm2m_LwM2MDevice_msg
 #define lwm2m_LwM2MDeviceMap_fields &lwm2m_LwM2MDeviceMap_msg
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_fields &lwm2m_LwM2MDeviceMap_DevicesEntry_msg
@@ -431,6 +485,9 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 
 /* Maximum encoded size of messages (where known) */
 /* lwm2m_LwM2MMessage_size depends on runtime parameters */
+/* lwm2m_LwM2MStatusReport_size depends on runtime parameters */
+/* lwm2m_LwM2MStatusReport_DataEntry_size depends on runtime parameters */
+/* lwm2m_LwM2MSensorValue_size depends on runtime parameters */
 /* lwm2m_LwM2MDevice_size depends on runtime parameters */
 /* lwm2m_LwM2MDeviceMap_size depends on runtime parameters */
 /* lwm2m_LwM2MDeviceMap_DevicesEntry_size depends on runtime parameters */
@@ -444,7 +501,6 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 #define lwm2m_LwM2MDeviceChallenge_size          40
 #define lwm2m_LwM2MResourceGet_size              277
 #define lwm2m_LwM2MResourceSet_size              277
-#define lwm2m_LwM2MStatusReport_size             18
 
 #ifdef __cplusplus
 } /* extern "C" */

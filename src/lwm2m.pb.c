@@ -12,7 +12,13 @@ PB_BIND(lwm2m_LwM2MMessage, lwm2m_LwM2MMessage, 2)
 PB_BIND(lwm2m_LwM2MCommand, lwm2m_LwM2MCommand, AUTO)
 
 
-PB_BIND(lwm2m_LwM2MStatusReport, lwm2m_LwM2MStatusReport, AUTO)
+PB_BIND(lwm2m_LwM2MStatusReport, lwm2m_LwM2MStatusReport, 2)
+
+
+PB_BIND(lwm2m_LwM2MStatusReport_DataEntry, lwm2m_LwM2MStatusReport_DataEntry, AUTO)
+
+
+PB_BIND(lwm2m_LwM2MSensorValue, lwm2m_LwM2MSensorValue, AUTO)
 
 
 PB_BIND(lwm2m_LwM2MDevice, lwm2m_LwM2MDevice, AUTO)

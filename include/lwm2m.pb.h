@@ -10,6 +10,13 @@
 #endif
 
 /* Enum definitions */
+typedef enum _lwm2m_ConnectionType {
+    lwm2m_ConnectionType_CONNECTION_WIFI = 0,
+    lwm2m_ConnectionType_CONNECTION_BLE = 1,
+    lwm2m_ConnectionType_CONNECTION_LORA = 2,
+    lwm2m_ConnectionType_CONNECTION_RS485 = 3
+} lwm2m_ConnectionType;
+
 typedef enum _lwm2m_LwM2MBootstrapResultCode {
     lwm2m_LwM2MBootstrapResultCode_UNSPECIFIED = 0,
     lwm2m_LwM2MBootstrapResultCode_SUCCESS = 1,
@@ -34,6 +41,9 @@ typedef struct _lwm2m_LwM2MCommand {
 typedef struct _lwm2m_LwM2MStatusReport {
     int32_t battery_level;
     int32_t uptime;
+    int32_t things_type;
+    int32_t things_id;
+    int32_t things_feature; /* array index in the things type */
     pb_callback_t data; /* key is object id (high 16 bits) + resource id (low 16 bits) */
 } lwm2m_LwM2MStatusReport;
 
@@ -64,6 +74,7 @@ typedef struct _lwm2m_LwM2MDevice {
     pb_callback_t mac_address;
     int32_t instance_id; /* unique per cluster */
     bool banned; /* if true, device is banned and cannot connect */
+    lwm2m_ConnectionType connection_type; /* Connection type enum */
 } lwm2m_LwM2MDevice;
 
 typedef struct _lwm2m_LwM2MDeviceMap {
@@ -175,12 +186,60 @@ typedef struct _lwm2m_FactoryPartition {
     uint32_t serial_number; /* device serial number */
 } lwm2m_FactoryPartition;
 
+typedef struct _lwm2m_Things {
+    int32_t type;
+    int32_t id;
+    pb_callback_t features;
+} lwm2m_Things;
+
+typedef struct _lwm2m_ThingsFeature {
+    int32_t id;
+    pb_callback_t data;
+} lwm2m_ThingsFeature;
+
+typedef struct _lwm2m_ThingsFeature_DataEntry {
+    uint32_t key;
+    bool has_value;
+    lwm2m_LwM2MSensorValue value;
+} lwm2m_ThingsFeature_DataEntry;
+
+typedef struct _lwm2m_ThingsTemplate {
+    int32_t type;
+    pb_callback_t features;
+} lwm2m_ThingsTemplate;
+
+typedef struct _lwm2m_ThingsTemplateFeature {
+    int32_t id;
+    pb_callback_t fields;
+} lwm2m_ThingsTemplateFeature;
+
+typedef struct _lwm2m_ThingsTemplateField {
+    int32_t id;
+    pb_callback_t name;
+    pb_callback_t type;
+} lwm2m_ThingsTemplateField;
+
+typedef struct _lwm2m_ThingsTemplateAction {
+    int32_t type;
+    int32_t id;
+    int32_t feature_id;
+} lwm2m_ThingsTemplateAction;
+
+typedef struct _lwm2m_ThingsTemplateEvent {
+    int32_t id;
+    pb_callback_t name;
+} lwm2m_ThingsTemplateEvent;
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Helper constants for enums */
+#define _lwm2m_ConnectionType_MIN lwm2m_ConnectionType_CONNECTION_WIFI
+#define _lwm2m_ConnectionType_MAX lwm2m_ConnectionType_CONNECTION_RS485
+#define _lwm2m_ConnectionType_ARRAYSIZE ((lwm2m_ConnectionType)(lwm2m_ConnectionType_CONNECTION_RS485+1))
+
 #define _lwm2m_LwM2MBootstrapResultCode_MIN lwm2m_LwM2MBootstrapResultCode_UNSPECIFIED
 #define _lwm2m_LwM2MBootstrapResultCode_MAX lwm2m_LwM2MBootstrapResultCode_BANNED
 #define _lwm2m_LwM2MBootstrapResultCode_ARRAYSIZE ((lwm2m_LwM2MBootstrapResultCode)(lwm2m_LwM2MBootstrapResultCode_BANNED+1))
@@ -190,6 +249,7 @@ extern "C" {
 
 
 
+#define lwm2m_LwM2MDevice_connection_type_ENUMTYPE lwm2m_ConnectionType
 
 
 
@@ -203,13 +263,21 @@ extern "C" {
 
 
 
+
+
+
+
+
+
+
+
 /* Initializer values for message structs */
 #define lwm2m_LwM2MMessage_init_default          {0, 0, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MCommand_init_default          {0, {0}}
-#define lwm2m_LwM2MStatusReport_init_default     {0, 0, {{NULL}, NULL}}
+#define lwm2m_LwM2MStatusReport_init_default     {0, 0, 0, 0, 0, {{NULL}, NULL}}
 #define lwm2m_LwM2MStatusReport_DataEntry_init_default {0, false, lwm2m_LwM2MSensorValue_init_default}
 #define lwm2m_LwM2MSensorValue_init_default      {0, {{{NULL}, NULL}}}
-#define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
+#define lwm2m_LwM2MDevice_init_default           {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0, _lwm2m_ConnectionType_MIN}
 #define lwm2m_LwM2MDeviceMap_init_default        {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_default {0, false, lwm2m_LwM2MDevice_init_default}
 #define lwm2m_LwM2MDeviceChallenge_init_default  {0, {0, {0}}}
@@ -220,12 +288,20 @@ extern "C" {
 #define lwm2m_LwM2MResourceGet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_LwM2MResourceSet_init_default      {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_FactoryPartition_init_default      {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, 0, 0}
+#define lwm2m_Things_init_default                {0, 0, {{NULL}, NULL}}
+#define lwm2m_ThingsFeature_init_default         {0, {{NULL}, NULL}}
+#define lwm2m_ThingsFeature_DataEntry_init_default {0, false, lwm2m_LwM2MSensorValue_init_default}
+#define lwm2m_ThingsTemplate_init_default        {0, {{NULL}, NULL}}
+#define lwm2m_ThingsTemplateFeature_init_default {0, {{NULL}, NULL}}
+#define lwm2m_ThingsTemplateField_init_default   {0, {{NULL}, NULL}, {{NULL}, NULL}}
+#define lwm2m_ThingsTemplateAction_init_default  {0, 0, 0}
+#define lwm2m_ThingsTemplateEvent_init_default   {0, {{NULL}, NULL}}
 #define lwm2m_LwM2MMessage_init_zero             {0, 0, 0, {{{NULL}, NULL}}}
 #define lwm2m_LwM2MCommand_init_zero             {0, {0}}
-#define lwm2m_LwM2MStatusReport_init_zero        {0, 0, {{NULL}, NULL}}
+#define lwm2m_LwM2MStatusReport_init_zero        {0, 0, 0, 0, 0, {{NULL}, NULL}}
 #define lwm2m_LwM2MStatusReport_DataEntry_init_zero {0, false, lwm2m_LwM2MSensorValue_init_zero}
 #define lwm2m_LwM2MSensorValue_init_zero         {0, {{{NULL}, NULL}}}
-#define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0}
+#define lwm2m_LwM2MDevice_init_zero              {0, 0, {0, {0}}, {0}, {{NULL}, NULL}, 0, 0, _lwm2m_ConnectionType_MIN}
 #define lwm2m_LwM2MDeviceMap_init_zero           {{{NULL}, NULL}}
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_init_zero {0, false, lwm2m_LwM2MDevice_init_zero}
 #define lwm2m_LwM2MDeviceChallenge_init_zero     {0, {0, {0}}}
@@ -236,12 +312,23 @@ extern "C" {
 #define lwm2m_LwM2MResourceGet_init_zero         {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_LwM2MResourceSet_init_zero         {0, 0, 0, 0, {{0, {0}}}}
 #define lwm2m_FactoryPartition_init_zero         {"", 0, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, {0, {0}}, 0, 0}
+#define lwm2m_Things_init_zero                   {0, 0, {{NULL}, NULL}}
+#define lwm2m_ThingsFeature_init_zero            {0, {{NULL}, NULL}}
+#define lwm2m_ThingsFeature_DataEntry_init_zero  {0, false, lwm2m_LwM2MSensorValue_init_zero}
+#define lwm2m_ThingsTemplate_init_zero           {0, {{NULL}, NULL}}
+#define lwm2m_ThingsTemplateFeature_init_zero    {0, {{NULL}, NULL}}
+#define lwm2m_ThingsTemplateField_init_zero      {0, {{NULL}, NULL}, {{NULL}, NULL}}
+#define lwm2m_ThingsTemplateAction_init_zero     {0, 0, 0}
+#define lwm2m_ThingsTemplateEvent_init_zero      {0, {{NULL}, NULL}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define lwm2m_LwM2MCommand_reset_tag             1
 #define lwm2m_LwM2MCommand_reboot_tag            2
 #define lwm2m_LwM2MStatusReport_battery_level_tag 1
 #define lwm2m_LwM2MStatusReport_uptime_tag       2
+#define lwm2m_LwM2MStatusReport_things_type_tag  3
+#define lwm2m_LwM2MStatusReport_things_id_tag    4
+#define lwm2m_LwM2MStatusReport_things_feature_tag 5
 #define lwm2m_LwM2MStatusReport_data_tag         100
 #define lwm2m_LwM2MSensorValue_bytes_value_tag   1
 #define lwm2m_LwM2MSensorValue_string_value_tag  2
@@ -258,6 +345,7 @@ extern "C" {
 #define lwm2m_LwM2MDevice_mac_address_tag        5
 #define lwm2m_LwM2MDevice_instance_id_tag        6
 #define lwm2m_LwM2MDevice_banned_tag             7
+#define lwm2m_LwM2MDevice_connection_type_tag    8
 #define lwm2m_LwM2MDeviceMap_devices_tag         1
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_key_tag 1
 #define lwm2m_LwM2MDeviceMap_DevicesEntry_value_tag 2
@@ -310,6 +398,25 @@ extern "C" {
 #define lwm2m_FactoryPartition_signature_cert_tag 7
 #define lwm2m_FactoryPartition_model_tag         8
 #define lwm2m_FactoryPartition_serial_number_tag 9
+#define lwm2m_Things_type_tag                    1
+#define lwm2m_Things_id_tag                      2
+#define lwm2m_Things_features_tag                3
+#define lwm2m_ThingsFeature_id_tag               1
+#define lwm2m_ThingsFeature_data_tag             100
+#define lwm2m_ThingsFeature_DataEntry_key_tag    1
+#define lwm2m_ThingsFeature_DataEntry_value_tag  2
+#define lwm2m_ThingsTemplate_type_tag            1
+#define lwm2m_ThingsTemplate_features_tag        2
+#define lwm2m_ThingsTemplateFeature_id_tag       1
+#define lwm2m_ThingsTemplateFeature_fields_tag   2
+#define lwm2m_ThingsTemplateField_id_tag         1
+#define lwm2m_ThingsTemplateField_name_tag       2
+#define lwm2m_ThingsTemplateField_type_tag       3
+#define lwm2m_ThingsTemplateAction_type_tag      1
+#define lwm2m_ThingsTemplateAction_id_tag        2
+#define lwm2m_ThingsTemplateAction_feature_id_tag 3
+#define lwm2m_ThingsTemplateEvent_id_tag         1
+#define lwm2m_ThingsTemplateEvent_name_tag       2
 
 /* Struct field encoding specification for nanopb */
 #define lwm2m_LwM2MMessage_FIELDLIST(X, a) \
@@ -336,6 +443,9 @@ X(a, STATIC,   ONEOF,    BOOL,     (body,reboot,body.reboot),   2)
 #define lwm2m_LwM2MStatusReport_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, SINT32,   battery_level,     1) \
 X(a, STATIC,   SINGULAR, SINT32,   uptime,            2) \
+X(a, STATIC,   SINGULAR, SINT32,   things_type,       3) \
+X(a, STATIC,   SINGULAR, SINT32,   things_id,         4) \
+X(a, STATIC,   SINGULAR, SINT32,   things_feature,    5) \
 X(a, CALLBACK, REPEATED, MESSAGE,  data,            100)
 #define lwm2m_LwM2MStatusReport_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MStatusReport_DEFAULT NULL
@@ -365,7 +475,8 @@ X(a, STATIC,   SINGULAR, BYTES,    public_key,        3) \
 X(a, STATIC,   SINGULAR, FIXED_LENGTH_BYTES, aes_key,           4) \
 X(a, CALLBACK, SINGULAR, BYTES,    mac_address,       5) \
 X(a, STATIC,   SINGULAR, SINT32,   instance_id,       6) \
-X(a, STATIC,   SINGULAR, BOOL,     banned,            7)
+X(a, STATIC,   SINGULAR, BOOL,     banned,            7) \
+X(a, STATIC,   SINGULAR, UENUM,    connection_type,   8)
 #define lwm2m_LwM2MDevice_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MDevice_DEFAULT NULL
 
@@ -456,6 +567,62 @@ X(a, STATIC,   SINGULAR, UINT32,   serial_number,     9)
 #define lwm2m_FactoryPartition_CALLBACK NULL
 #define lwm2m_FactoryPartition_DEFAULT NULL
 
+#define lwm2m_Things_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   type,              1) \
+X(a, STATIC,   SINGULAR, SINT32,   id,                2) \
+X(a, CALLBACK, REPEATED, MESSAGE,  features,          3)
+#define lwm2m_Things_CALLBACK pb_default_field_callback
+#define lwm2m_Things_DEFAULT NULL
+#define lwm2m_Things_features_MSGTYPE lwm2m_ThingsFeature
+
+#define lwm2m_ThingsFeature_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   id,                1) \
+X(a, CALLBACK, REPEATED, MESSAGE,  data,            100)
+#define lwm2m_ThingsFeature_CALLBACK pb_default_field_callback
+#define lwm2m_ThingsFeature_DEFAULT NULL
+#define lwm2m_ThingsFeature_data_MSGTYPE lwm2m_ThingsFeature_DataEntry
+
+#define lwm2m_ThingsFeature_DataEntry_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   key,               1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
+#define lwm2m_ThingsFeature_DataEntry_CALLBACK NULL
+#define lwm2m_ThingsFeature_DataEntry_DEFAULT NULL
+#define lwm2m_ThingsFeature_DataEntry_value_MSGTYPE lwm2m_LwM2MSensorValue
+
+#define lwm2m_ThingsTemplate_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   type,              1) \
+X(a, CALLBACK, REPEATED, MESSAGE,  features,          2)
+#define lwm2m_ThingsTemplate_CALLBACK pb_default_field_callback
+#define lwm2m_ThingsTemplate_DEFAULT NULL
+#define lwm2m_ThingsTemplate_features_MSGTYPE lwm2m_ThingsTemplateFeature
+
+#define lwm2m_ThingsTemplateFeature_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   id,                1) \
+X(a, CALLBACK, REPEATED, MESSAGE,  fields,            2)
+#define lwm2m_ThingsTemplateFeature_CALLBACK pb_default_field_callback
+#define lwm2m_ThingsTemplateFeature_DEFAULT NULL
+#define lwm2m_ThingsTemplateFeature_fields_MSGTYPE lwm2m_ThingsTemplateField
+
+#define lwm2m_ThingsTemplateField_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   id,                1) \
+X(a, CALLBACK, SINGULAR, STRING,   name,              2) \
+X(a, CALLBACK, SINGULAR, STRING,   type,              3)
+#define lwm2m_ThingsTemplateField_CALLBACK pb_default_field_callback
+#define lwm2m_ThingsTemplateField_DEFAULT NULL
+
+#define lwm2m_ThingsTemplateAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   type,              1) \
+X(a, STATIC,   SINGULAR, SINT32,   id,                2) \
+X(a, STATIC,   SINGULAR, SINT32,   feature_id,        3)
+#define lwm2m_ThingsTemplateAction_CALLBACK NULL
+#define lwm2m_ThingsTemplateAction_DEFAULT NULL
+
+#define lwm2m_ThingsTemplateEvent_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, SINT32,   id,                1) \
+X(a, CALLBACK, SINGULAR, STRING,   name,              2)
+#define lwm2m_ThingsTemplateEvent_CALLBACK pb_default_field_callback
+#define lwm2m_ThingsTemplateEvent_DEFAULT NULL
+
 extern const pb_msgdesc_t lwm2m_LwM2MMessage_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MCommand_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MStatusReport_msg;
@@ -472,6 +639,14 @@ extern const pb_msgdesc_t lwm2m_LwM2MDeviceBootstrap_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MResourceGet_msg;
 extern const pb_msgdesc_t lwm2m_LwM2MResourceSet_msg;
 extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
+extern const pb_msgdesc_t lwm2m_Things_msg;
+extern const pb_msgdesc_t lwm2m_ThingsFeature_msg;
+extern const pb_msgdesc_t lwm2m_ThingsFeature_DataEntry_msg;
+extern const pb_msgdesc_t lwm2m_ThingsTemplate_msg;
+extern const pb_msgdesc_t lwm2m_ThingsTemplateFeature_msg;
+extern const pb_msgdesc_t lwm2m_ThingsTemplateField_msg;
+extern const pb_msgdesc_t lwm2m_ThingsTemplateAction_msg;
+extern const pb_msgdesc_t lwm2m_ThingsTemplateEvent_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define lwm2m_LwM2MMessage_fields &lwm2m_LwM2MMessage_msg
@@ -490,6 +665,14 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 #define lwm2m_LwM2MResourceGet_fields &lwm2m_LwM2MResourceGet_msg
 #define lwm2m_LwM2MResourceSet_fields &lwm2m_LwM2MResourceSet_msg
 #define lwm2m_FactoryPartition_fields &lwm2m_FactoryPartition_msg
+#define lwm2m_Things_fields &lwm2m_Things_msg
+#define lwm2m_ThingsFeature_fields &lwm2m_ThingsFeature_msg
+#define lwm2m_ThingsFeature_DataEntry_fields &lwm2m_ThingsFeature_DataEntry_msg
+#define lwm2m_ThingsTemplate_fields &lwm2m_ThingsTemplate_msg
+#define lwm2m_ThingsTemplateFeature_fields &lwm2m_ThingsTemplateFeature_msg
+#define lwm2m_ThingsTemplateField_fields &lwm2m_ThingsTemplateField_msg
+#define lwm2m_ThingsTemplateAction_fields &lwm2m_ThingsTemplateAction_msg
+#define lwm2m_ThingsTemplateEvent_fields &lwm2m_ThingsTemplateEvent_msg
 
 /* Maximum encoded size of messages (where known) */
 /* lwm2m_LwM2MMessage_size depends on runtime parameters */
@@ -501,6 +684,13 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 /* lwm2m_LwM2MDeviceMap_DevicesEntry_size depends on runtime parameters */
 /* lwm2m_LwM2MDeviceBootstrapRequest_size depends on runtime parameters */
 /* lwm2m_LwM2MDeviceBootstrap_size depends on runtime parameters */
+/* lwm2m_Things_size depends on runtime parameters */
+/* lwm2m_ThingsFeature_size depends on runtime parameters */
+/* lwm2m_ThingsFeature_DataEntry_size depends on runtime parameters */
+/* lwm2m_ThingsTemplate_size depends on runtime parameters */
+/* lwm2m_ThingsTemplateFeature_size depends on runtime parameters */
+/* lwm2m_ThingsTemplateField_size depends on runtime parameters */
+/* lwm2m_ThingsTemplateEvent_size depends on runtime parameters */
 #define LWM2M_LWM2M_PB_H_MAX_SIZE                lwm2m_LwM2MBootstrapResponse_size
 #define lwm2m_FactoryPartition_size              334
 #define lwm2m_LwM2MBootstrapResponse_size        523
@@ -509,6 +699,7 @@ extern const pb_msgdesc_t lwm2m_FactoryPartition_msg;
 #define lwm2m_LwM2MDeviceChallenge_size          40
 #define lwm2m_LwM2MResourceGet_size              277
 #define lwm2m_LwM2MResourceSet_size              277
+#define lwm2m_ThingsTemplateAction_size          18
 
 #ifdef __cplusplus
 } /* extern "C" */

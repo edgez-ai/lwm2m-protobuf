@@ -69,6 +69,13 @@ message LwM2MSensorValue {
 	}
 }
 
+enum ConnectionType {
+	CONNECTION_WIFI = 0;
+	CONNECTION_BLE = 1;
+	CONNECTION_LORA = 2;
+	CONNECTION_RS485 = 3;
+}
+
 message LwM2MDevice {
 	sint32 model = 1;
 	uint32 serial = 2; // also same meaning for node_id in mesh network
@@ -77,6 +84,7 @@ message LwM2MDevice {
 	bytes mac_address = 5;
 	sint32 instance_id = 6; // unique per cluster
 	bool banned = 7; // if true, device is banned and cannot connect
+	ConnectionType connection_type = 8; // Connection type enum
 }
 
 message LwM2MDeviceMap {

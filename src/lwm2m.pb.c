@@ -54,6 +54,32 @@ PB_BIND(lwm2m_LwM2MResourceSet, lwm2m_LwM2MResourceSet, 2)
 PB_BIND(lwm2m_FactoryPartition, lwm2m_FactoryPartition, 2)
 
 
+PB_BIND(lwm2m_Things, lwm2m_Things, AUTO)
+
+
+PB_BIND(lwm2m_ThingsFeature, lwm2m_ThingsFeature, 2)
+
+
+PB_BIND(lwm2m_ThingsFeature_DataEntry, lwm2m_ThingsFeature_DataEntry, AUTO)
+
+
+PB_BIND(lwm2m_ThingsTemplate, lwm2m_ThingsTemplate, AUTO)
+
+
+PB_BIND(lwm2m_ThingsTemplateFeature, lwm2m_ThingsTemplateFeature, AUTO)
+
+
+PB_BIND(lwm2m_ThingsTemplateField, lwm2m_ThingsTemplateField, AUTO)
+
+
+PB_BIND(lwm2m_ThingsTemplateAction, lwm2m_ThingsTemplateAction, AUTO)
+
+
+PB_BIND(lwm2m_ThingsTemplateEvent, lwm2m_ThingsTemplateEvent, AUTO)
+
+
+
+
 
 
 

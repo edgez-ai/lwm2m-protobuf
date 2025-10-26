@@ -37,18 +37,6 @@ typedef struct _lwm2m_LwM2MStatusReport {
     pb_callback_t data; /* key is object id (high 16 bits) + resource id (low 16 bits) */
 } lwm2m_LwM2MStatusReport;
 
-typedef struct _lwm2m_LwM2MMessage {
-    int32_t model;
-    uint32_t serial; /* also same meaning for node_id in mesh network */
-    pb_size_t which_body;
-    union {
-        /* Future message types here */
-        pb_callback_t encrypted_data; /* inside is encrypted protobuf message */
-        lwm2m_LwM2MCommand command;
-        lwm2m_LwM2MStatusReport status_report;
-    } body;
-} lwm2m_LwM2MMessage;
-
 typedef struct _lwm2m_LwM2MSensorValue {
     pb_size_t which_value;
     union {
@@ -101,6 +89,20 @@ typedef struct _lwm2m_LwM2MDeviceChallengeAnswer {
     lwm2m_LwM2MDeviceChallengeAnswer_public_key_t public_key; /* presigned signature using trusted private key, and encrypted using ECDH + ChaCha20-Poly1305 */
     lwm2m_LwM2MDeviceChallengeAnswer_signature_t signature; /* signature of the above fields using device private key */
 } lwm2m_LwM2MDeviceChallengeAnswer;
+
+typedef struct _lwm2m_LwM2MMessage {
+    int32_t model;
+    uint32_t serial; /* also same meaning for node_id in mesh network */
+    pb_size_t which_body;
+    union {
+        /* Future message types here */
+        pb_callback_t encrypted_data; /* inside is encrypted protobuf message */
+        lwm2m_LwM2MCommand command;
+        lwm2m_LwM2MStatusReport status_report;
+        lwm2m_LwM2MDeviceChallenge device_challenge;
+        lwm2m_LwM2MDeviceChallengeAnswer device_challenge_answer;
+    } body;
+} lwm2m_LwM2MMessage;
 
 /* send the request together with gateway PSK as security Guarantee */
 typedef struct _lwm2m_LwM2MDeviceBootstrapRequest {
@@ -241,11 +243,6 @@ extern "C" {
 #define lwm2m_LwM2MStatusReport_battery_level_tag 1
 #define lwm2m_LwM2MStatusReport_uptime_tag       2
 #define lwm2m_LwM2MStatusReport_data_tag         100
-#define lwm2m_LwM2MMessage_model_tag             1
-#define lwm2m_LwM2MMessage_serial_tag            2
-#define lwm2m_LwM2MMessage_encrypted_data_tag    100
-#define lwm2m_LwM2MMessage_command_tag           101
-#define lwm2m_LwM2MMessage_status_report_tag     102
 #define lwm2m_LwM2MSensorValue_bytes_value_tag   1
 #define lwm2m_LwM2MSensorValue_string_value_tag  2
 #define lwm2m_LwM2MSensorValue_int_value_tag     3
@@ -268,6 +265,13 @@ extern "C" {
 #define lwm2m_LwM2MDeviceChallenge_public_key_tag 2
 #define lwm2m_LwM2MDeviceChallengeAnswer_public_key_tag 1
 #define lwm2m_LwM2MDeviceChallengeAnswer_signature_tag 2
+#define lwm2m_LwM2MMessage_model_tag             1
+#define lwm2m_LwM2MMessage_serial_tag            2
+#define lwm2m_LwM2MMessage_encrypted_data_tag    100
+#define lwm2m_LwM2MMessage_command_tag           101
+#define lwm2m_LwM2MMessage_status_report_tag     102
+#define lwm2m_LwM2MMessage_device_challenge_tag  103
+#define lwm2m_LwM2MMessage_device_challenge_answer_tag 104
 #define lwm2m_LwM2MDeviceBootstrapRequest_model_tag 1
 #define lwm2m_LwM2MDeviceBootstrapRequest_serial_tag 2
 #define lwm2m_LwM2MDeviceBootstrapRequest_nounce_tag 3
@@ -313,11 +317,15 @@ X(a, STATIC,   SINGULAR, SINT32,   model,             1) \
 X(a, STATIC,   SINGULAR, UINT32,   serial,            2) \
 X(a, CALLBACK, ONEOF,    BYTES,    (body,encrypted_data,body.encrypted_data), 100) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (body,command,body.command), 101) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (body,status_report,body.status_report), 102)
+X(a, STATIC,   ONEOF,    MESSAGE,  (body,status_report,body.status_report), 102) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (body,device_challenge,body.device_challenge), 103) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (body,device_challenge_answer,body.device_challenge_answer), 104)
 #define lwm2m_LwM2MMessage_CALLBACK pb_default_field_callback
 #define lwm2m_LwM2MMessage_DEFAULT NULL
 #define lwm2m_LwM2MMessage_body_command_MSGTYPE lwm2m_LwM2MCommand
 #define lwm2m_LwM2MMessage_body_status_report_MSGTYPE lwm2m_LwM2MStatusReport
+#define lwm2m_LwM2MMessage_body_device_challenge_MSGTYPE lwm2m_LwM2MDeviceChallenge
+#define lwm2m_LwM2MMessage_body_device_challenge_answer_MSGTYPE lwm2m_LwM2MDeviceChallengeAnswer
 
 #define lwm2m_LwM2MCommand_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    BOOL,     (body,reset,body.reset),   1) \

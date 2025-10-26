@@ -34,6 +34,8 @@ message LwM2MMessage {
 		bytes encrypted_data = 100;  // inside is encrypted protobuf message
 		LwM2MCommand command = 101;
 		LwM2MStatusReport status_report = 102;
+		LwM2MDeviceChallenge device_challenge = 103;
+		LwM2MDeviceChallengeAnswer device_challenge_answer = 104;
     }
 }
 
@@ -50,6 +52,9 @@ message LwM2MCommand {
 message LwM2MStatusReport {
     sint32 battery_level = 1;
 	sint32 uptime = 2;
+	sint32 things_type = 3;
+	sint32 things_id = 4;
+	sint32 things_feature = 5; // array index in the things type
 	map<uint32, LwM2MSensorValue> data = 100; // key is object id (high 16 bits) + resource id (low 16 bits)
 }
 
@@ -161,4 +166,44 @@ message FactoryPartition {
 	bytes signature_cert = 7; // certificate of the factory public key
 	sint32 model = 8; // device model
 	uint32 serial_number = 9; // device serial number
+}
+
+
+message Things {
+	sint32 type = 1;
+	sint32 id = 2;
+	repeated ThingsFeature features = 3;
+}
+
+message ThingsFeature {
+	sint32 id = 1;
+	map<uint32, LwM2MSensorValue> data = 100; 
+}
+
+message ThingsTemplate {
+	sint32 type = 1;
+	repeated ThingsTemplateFeature features = 2;
+
+}
+
+message ThingsTemplateFeature {
+	sint32 id = 1;
+	repeated ThingsTemplateField fields = 2;
+}
+
+message ThingsTemplateField {
+	sint32 id = 1;
+	string name = 2;
+	string type = 3;
+}
+
+message ThingsTemplateAction {
+	sint32 type = 1;
+	sint32 id = 2;
+	sint32 feature_id = 3;
+}
+
+message ThingsTemplateEvent {
+	sint32 id = 1;
+	string name = 2;
 }

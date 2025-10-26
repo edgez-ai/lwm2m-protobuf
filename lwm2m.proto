@@ -34,6 +34,8 @@ message LwM2MMessage {
 		bytes encrypted_data = 100;  // inside is encrypted protobuf message
 		LwM2MCommand command = 101;
 		LwM2MStatusReport status_report = 102;
+		LwM2MDeviceChallenge device_challenge = 103;
+		LwM2MDeviceChallengeAnswer device_challenge_answer = 104;
     }
 }
 

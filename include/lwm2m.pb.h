@@ -11,10 +11,11 @@
 
 /* Enum definitions */
 typedef enum _lwm2m_ConnectionType {
-    lwm2m_ConnectionType_CONNECTION_WIFI = 0,
-    lwm2m_ConnectionType_CONNECTION_BLE = 1,
-    lwm2m_ConnectionType_CONNECTION_LORA = 2,
-    lwm2m_ConnectionType_CONNECTION_RS485 = 3
+    lwm2m_ConnectionType_CONNECTION_UNSPECIFIED = 0,
+    lwm2m_ConnectionType_CONNECTION_WIFI = 1,
+    lwm2m_ConnectionType_CONNECTION_BLE = 2,
+    lwm2m_ConnectionType_CONNECTION_LORA = 3,
+    lwm2m_ConnectionType_CONNECTION_RS485 = 4
 } lwm2m_ConnectionType;
 
 typedef enum _lwm2m_LwM2MBootstrapResultCode {
@@ -236,7 +237,7 @@ extern "C" {
 #endif
 
 /* Helper constants for enums */
-#define _lwm2m_ConnectionType_MIN lwm2m_ConnectionType_CONNECTION_WIFI
+#define _lwm2m_ConnectionType_MIN lwm2m_ConnectionType_CONNECTION_UNSPECIFIED
 #define _lwm2m_ConnectionType_MAX lwm2m_ConnectionType_CONNECTION_RS485
 #define _lwm2m_ConnectionType_ARRAYSIZE ((lwm2m_ConnectionType)(lwm2m_ConnectionType_CONNECTION_RS485+1))
 
